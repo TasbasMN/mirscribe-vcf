@@ -45,26 +45,14 @@ def generate_match_count_columns(df):
     Returns:
         pandas.DataFrame: The input DataFrame with two new columns added.
     """
-    def count_ones(alignment_string, seed=False):
-        """
-        Count the number of '1' characters in the alignment string.
+    # Count the number of '1' characters in the entire alignment string
+    df["pred_num_basepairs"] = df["alignment_string"].str.count("1")
 
-        Args:
-            alignment_string (str): The alignment string.
-            seed (bool, optional): If True, count only the '1' characters in the seed region (positions 2-7).
-
-        Returns:
-            int: The number of '1' characters in the alignment string or seed region.
-        """
-        if seed:
-            return alignment_string[1:7].count("1")
-        else:
-            return alignment_string.count("1")
-
-    df["pred_num_basepairs"] = df["alignment_string"].apply(count_ones)
-    df["pred_seed_basepairs"] = df["alignment_string"].apply(lambda x: count_ones(x, seed=True))
+    # Count the number of '1' characters in the seed region (positions 2-7)
+    df["pred_seed_basepairs"] = df["alignment_string"].str.slice(1, 7).str.count("1")
 
     return df
+
 
 
 def generate_ta_sps_columns(df):
