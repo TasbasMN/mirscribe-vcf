@@ -26,17 +26,11 @@ def generate_alignment_string_from_dot_bracket(df):
     Returns:
         pandas.DataFrame: The input DataFrame with a new column 'alignment_string' added.
     """
-    alignment_strings = []
+    start_strings = df['mirna_start'].apply(lambda x: '0' * x)
+    mid_strings = df['mirna_dot_bracket_5to3'].apply(lambda x: ''.join('1' if char == ')' else '0' for char in x))
+    end_strings = (df['mirna_sequence'].str.len() - df['mirna_end'] - 1).apply(lambda x: '0' * x)
 
-    for _, row in df.iterrows():
-        start_string = "0" * row.mirna_start
-        mid_string = "".join("1" if char == ")" else "0" for char in row.mirna_dot_bracket_5to3)
-        end_string = "0" * (len(row.mirna_sequence) - row.mirna_end - 1)
-
-        alignment_string = start_string + mid_string + end_string
-        alignment_strings.append(alignment_string)
-
-    df["alignment_string"] = alignment_strings
+    df['alignment_string'] = start_strings + mid_strings + end_strings
 
     return df
 
