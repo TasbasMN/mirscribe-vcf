@@ -2,14 +2,11 @@ from scripts.globals import *
 
 
 def calculate_au_content(sequence):
-    au_count = sequence.count(
-        'A') + sequence.count('T') + sequence.count('U')
-    return None if len(sequence) == 0 else au_count / len(sequence)
+    au_count = sequence.count('A') + sequence.count('T') + sequence.count('U')
+    total_length = len(sequence)
+    return au_count / total_length if total_length > 0 else None
 
-def generate_mre_au_content_column(df):
-    df["mre_au_content"] = df['mre_region'].apply(calculate_au_content)
 
-    return df
 
 def get_nucleotides_in_interval(chrom, start, end):
     """

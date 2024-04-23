@@ -146,8 +146,25 @@ def generate_seed_type_columns(df):
     return df
 
 
-def generate_local_au_content_column(vcf_df):
+def calculate_au_content(sequence):
+    au_count = sequence.count(
+        'A') + sequence.count('T') + sequence.count('U')
+    return None if len(sequence) == 0 else au_count / len(sequence)
 
-    vcf_df["local_au_content"] = vcf_df['mrna_sequence'].apply(calculate_au_content)
-    
-    return vcf_df
+def generate_local_au_content_column(df):
+    au_count = (df['mrna_sequence'].str.count('A') +
+                df['mrna_sequence'].str.count('T') +
+                df['mrna_sequence'].str.count('U'))
+    total_length = df['mrna_sequence'].str.len()
+    df["local_au_content"] = au_count / total_length
+    df.loc[total_length == 0, "local_au_content"] = None
+    return df
+
+def generate_mre_au_content_column(df):
+    au_count = (df['mre_region'].str.count('A') +
+                df['mre_region'].str.count('T') +
+                df['mre_region'].str.count('U'))
+    total_length = df['mre_region'].str.len()
+    df["mre_au_content"] = au_count / total_length
+    df.loc[total_length == 0, "mre_au_content"] = None
+    return df
