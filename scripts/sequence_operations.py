@@ -113,10 +113,10 @@ def generate_mre_sequence(df):
     Generate the miRNA response element (MRE) sequence for each row in the input DataFrame.
 
     Args:
-        df (pandas.DataFrame): A DataFrame containing columns 'mrna_sequence', 'mrna_end', and 'mirna_start'.
+        df (pandas.DataFrame): A DataFrame containing columns 'mrna_sequence', 'mrna_end', 'mirna_start', and 'mirna_sequence'.
 
     Returns:
-        pandas.DataFrame: The input DataFrame with a new column 'mre_region' added.
+        pandas.DataFrame: The input DataFrame with new columns 'mre_start', 'mre_end', and 'mre_region' added.
     """
     # Calculate miRNA length
     df["mirna_length"] = df["mirna_sequence"].str.len()
@@ -126,13 +126,13 @@ def generate_mre_sequence(df):
     df["mre_start"] = df["mre_end"] - df["mirna_length"]
 
     # Ensure MRE start is not negative
-    df["mre_start"] = df["mre_start"].apply(lambda x: max(x, 0))
+    df["mre_start"] = df["mre_start"].clip(lower=0)
 
-    # Extract MRE sequence
-    df["mre_region"] = df.apply(lambda row: row["mrna_sequence"][row["mre_start"]:row["mre_end"]], axis=1)
+    # Extract MRE sequence using list comprehension for better performance
+    df["mre_region2"] = [mrna_seq[start:end] for mrna_seq, start, end in zip(df["mrna_sequence"], df["mre_start"], df["mre_end"])]
 
     # Drop temporary column
-    df = df.drop(columns=["mirna_length"])
+    df.drop(columns=["mirna_length"], inplace=True)
 
     return df
 
