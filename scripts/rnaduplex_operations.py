@@ -1,8 +1,9 @@
 import pandas as pd
 from scripts.globals import MIRNA_CSV, RNADUPLEX_LOCATION
 import subprocess, logging
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
+from multiprocessing import cpu_count
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -93,8 +94,8 @@ def run_jobs_multithreaded(job_generator, binary_value, verbose=False):
 
     Returns:
         list: A list of tuples, where each tuple contains the result of a job and the binary value.
-    """
-    with ProcessPoolExecutor() as executor:
+    """   
+    with ProcessPoolExecutor(max_workers=cpu_count()) as executor:
         futures = []
         for job in job_generator:
             future = executor.submit(run_rnaduplex_multithreaded, *job)
@@ -115,3 +116,27 @@ def run_jobs_multithreaded(job_generator, binary_value, verbose=False):
     return results
 
 
+def run_jobs_async(job_generator, binary_value, verbose=False, num_workers=cpu_count()):
+
+    # Configure logging
+    logging.basicConfig(level=logging.INFO if verbose else logging.WARNING)
+    
+    with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        futures = {executor.submit(run_rnaduplex_multithreaded, *job): job for job in job_generator}
+        results = []
+
+        for future in as_completed(futures):
+            job = futures[future]
+            try:
+                result = future.result()
+                result_with_binary = result + (binary_value,)
+                results.append(result_with_binary)
+                if verbose:
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    logging.info(f"{timestamp} - Completed job: {job}")
+                    
+            except Exception as e:
+                logging.error(f"Job {job} failed with error: {e}")
+                continue
+
+    return results

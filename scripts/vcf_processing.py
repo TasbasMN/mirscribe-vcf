@@ -84,8 +84,8 @@ def validate_ref_nucleotides(df, output_file="invalid_rows.csv", verbose=False):
         logging.info("Validating reference nucleotides...")
 
     # Add ref_len and alt_len columns
-    df["ref_len"] = df["ref"].apply(len)
-    df["alt_len"] = df["alt"].apply(len)
+    df["ref_len"] = df["ref"].str.len()
+    df["alt_len"] = df["alt"].str.len()
 
     # For rows where the reference length (ref_len) is greater than 1:
     # - Use the get_nucleotides_in_interval function to fetch the nucleotides

@@ -126,7 +126,7 @@ def generate_mre_sequence(df):
     df["mre_start"] = df["mre_start"].clip(lower=0)
 
     # Extract MRE sequence using list comprehension for better performance
-    df["mre_region2"] = [mrna_seq[start:end] for mrna_seq, start, end in zip(df["mrna_sequence"], df["mre_start"], df["mre_end"])]
+    df["mre_region"] = [mrna_seq[start:end] for mrna_seq, start, end in zip(df["mrna_sequence"], df["mre_start"], df["mre_end"])]
 
     # Drop temporary column
     df.drop(columns=["mirna_length"], inplace=True)
