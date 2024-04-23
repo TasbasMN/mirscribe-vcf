@@ -1,0 +1,1 @@
+This is the lean version of mirscribe pipeline's vcf analysis branch.
