@@ -1,4 +1,4 @@
-import os, logging, argparse, psutil, csv
+import logging, argparse, psutil, csv
 
 
 def parse_cli_arguments():
@@ -9,6 +9,7 @@ def parse_cli_arguments():
     parser.add_argument("-e", "--end", default=-1, type=int, help="end index")
     parser.add_argument("-o", "--output_dir", default="./results", help="Output directory for runtime file, defaults to ./results")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument("-p", "--profile", action='store_true', help='Enable profiler')
     return parser.parse_args()
 
 

@@ -1,5 +1,6 @@
 import gc, os, logging
 import pandas as pd
+import cProfile
 
 from scripts.dataframe_operations import *
 from scripts.globals import *
@@ -16,7 +17,14 @@ from scripts.xgb_operations import *
 
 
 def main():
-    args = parse_cli_arguments()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("vcf", help="VCF file to analyze")
+    parser.add_argument("-s", "--start", default=0, type=int, help="start index")
+    parser.add_argument("-e", "--end", default=-1, type=int, help="end index")
+    parser.add_argument("-o", "--output_dir", default="./results", help="Output directory for runtime file, defaults to ./results")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    
     vcf_file_path = args.vcf
     start = args.start
     end = args.end
@@ -107,7 +115,34 @@ def main():
     meaningful_results_file = os.path.join(output_dir, f"{vcf_id}_{start}_{end}_meaningful_results.csv")
     pred_df[pred_df.pred_difference_binary != 0].to_csv(meaningful_results_file, index=False)
     logging.info("Meaningful results saved to disk.")
+    
+    
 
 
 if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("vcf", help="VCF file to analyze")
+    parser.add_argument("-s", "--start", default=0, type=int, help="start index")
+    parser.add_argument("-e", "--end", default=-1, type=int, help="end index")
+    parser.add_argument("-o", "--output_dir", default="./results", help="Output directory for runtime file, defaults to ./results")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
+    parser.add_argument("-p", "--profile", action='store_true', help='Enable profiler')
+    
+    args = parser.parse_args()
+    
+    if args.profile:
+        logging.info("Enabling profiler.")
+        profiler = cProfile.Profile()
+        profiler.enable()
+    
     main()
+    if args.profile:
+        profiler.disable()
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        
+        profiler_dump = f"profile_output_{timestamp}.pstats"
+        profiler.dump_stats(os.path.join(args.output_dir, profiler_dump))
+        logging.info(f"Profiler results saved to {os.path.join(args.output_dir, profiler_dump)}")
+        
+        
