@@ -1,7 +1,8 @@
 import pandas as pd
 from scripts.globals import MIRNA_CSV, RNADUPLEX_LOCATION
-import subprocess, logging, datetime
+import subprocess, logging
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')

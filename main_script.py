@@ -71,9 +71,9 @@ def main():
     
     # creating jobs from case 1 mutations and running them
     wt_jobs, mutated_jobs = prepare_jobs_from_df(df)
-    wt_results = run_jobs_multithreaded(wt_jobs, 0)
+    wt_results = run_jobs_multithreaded(wt_jobs, 0, verbose)
     logging.info("Wild type jobs completed.")
-    mutated_results = run_jobs_multithreaded(mutated_jobs, 1)
+    mutated_results = run_jobs_multithreaded(mutated_jobs, 1, verbose)
     logging.info("Mutated jobs completed.")
     
     # saving rnaduplex results to disk
