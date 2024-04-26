@@ -5,11 +5,15 @@ import shutil
 import time
 import csv
 import os
-
+import sys
 
 def setup_logging(verbose):
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    if verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
 
 def log_step_completion(step_name, step_start_time):
     end_time = time.time()
