@@ -24,4 +24,7 @@ MIRNA_CSV = "data/mirna/mirna.csv"
 XGB_MODEL = "misc/models/model_with_no_close_proximity.json"
 NUCLEOTIDE_OFFSET = 30
 
+AWK_SCRIPT_PATH = "scripts/rnaduplex_to_csv.awk"
+
+
 

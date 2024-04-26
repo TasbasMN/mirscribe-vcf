@@ -1,6 +1,7 @@
 import pandas as pd
 from scripts.globals import TA_SPS_CSV
-from scripts.sequence_operations import calculate_au_content
+import re
+import functools
 
 def create_results_dataframe(wt_array, mutated_array):
     """Create a consolidated dataframe from the results."""
@@ -66,7 +67,7 @@ def generate_ta_sps_columns(df):
         pandas.DataFrame: The input DataFrame with 'ta_log10' and 'sps_mean' columns added.
     """
     # Generate temporary seed column
-    df["seed"] = df["mirna_sequence"].str[1:8].str.replace("T", "U")
+    df["seed"] = df["mirna_sequence"].str.slice(1, 8).replace({'T': 'U'}, regex=True)
     # Read ta sps data
     ta_sps_df = pd.read_csv(TA_SPS_CSV, usecols=["seed_8mer", "ta_log10", "sps_mean"])
     ta_sps_df = ta_sps_df.rename(columns={"seed_8mer": "seed"})
@@ -145,26 +146,60 @@ def generate_seed_type_columns(df):
 
     return df
 
-
+@functools.lru_cache(maxsize=None)
 def calculate_au_content(sequence):
     au_count = sequence.count(
         'A') + sequence.count('T') + sequence.count('U')
     return None if len(sequence) == 0 else au_count / len(sequence)
 
 def generate_local_au_content_column(df):
-    au_count = (df['mrna_sequence'].str.count('A') +
-                df['mrna_sequence'].str.count('T') +
-                df['mrna_sequence'].str.count('U'))
-    total_length = df['mrna_sequence'].str.len()
-    df["local_au_content"] = au_count / total_length
-    df.loc[total_length == 0, "local_au_content"] = None
+    # Apply the cached calculate_au_content function to each mrna_sequence in the DataFrame
+    df["local_au_content"] = df['mrna_sequence'].apply(calculate_au_content)
     return df
 
 def generate_mre_au_content_column(df):
-    au_count = (df['mre_region'].str.count('A') +
-                df['mre_region'].str.count('T') +
-                df['mre_region'].str.count('U'))
-    total_length = df['mre_region'].str.len()
-    df["mre_au_content"] = au_count / total_length
-    df.loc[total_length == 0, "mre_au_content"] = None
+    # Apply the cached calculate_au_content function to each mre_region in the DataFrame
+    df["mre_au_content"] = df['mre_region'].apply(calculate_au_content)
     return df
+
+
+def generate_important_sites_optimized(df):
+    """
+    Optimized function to generate columns for important miRNA target site features.
+
+    Args:
+        df (pandas.DataFrame): A DataFrame containing the 'mre_region' and 'alignment_string' columns.
+
+    Returns:
+        pandas.DataFrame: The input DataFrame with additional columns for important site features.
+    """
+    # Precompile the regular expression for consecutive matches
+    consecutive_match_re = re.compile("1{9,}")
+
+    # Anchor site
+    df["anchor_a"] = df["mre_region"].str.endswith("A").astype(int)
+
+    # Pre-calculate slices of 'alignment_string' to avoid repeated operations
+    alignment_slice_1_7 = df["alignment_string"].str[1:7]
+    alignment_slice_7 = df["alignment_string"].str[7]
+    alignment_slice_1_8 = df["alignment_string"].str[1:8]
+    alignment_slice_12_17 = df["alignment_string"].str[12:17]
+    alignment_slice_12_16 = df["alignment_string"].str[12:16]
+    alignment_slice_16_21 = df["alignment_string"].str[16:21]
+
+    # Seed match features
+    df["6mer_seed"] = alignment_slice_1_7.apply(lambda x: x.count("0") == 0).astype(int)
+    df["match_8"] = (alignment_slice_7 == "1").astype(int)
+    df["6mer_seed_1_mismatch"] = alignment_slice_1_7.apply(lambda x: x.count("0") == 1).astype(int)
+    df["empty_seed"] = alignment_slice_1_8.apply(lambda x: x.count("1") == 0).astype(int)
+
+    # Compensatory and supplementary sites
+    df["compensatory_site"] = alignment_slice_12_17.apply(lambda x: x.count("0") == 0).astype(int)
+    df["supplementary_site"] = alignment_slice_12_16.apply(lambda x: x.count("0") == 0).astype(int)
+    df["supplementary_site_2"] = alignment_slice_16_21.apply(lambda x: x.count("0") == 0).astype(int)
+
+    # Consecutive match
+    df["9_consecutive_match_anywhere"] = df["alignment_string"].apply(lambda x: bool(consecutive_match_re.search(x))).astype(int)
+
+    return df
+

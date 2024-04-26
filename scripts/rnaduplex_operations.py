@@ -238,6 +238,6 @@ def run_jobs_async_batched(job_generator, binary_value, verbose=False, num_worke
                     
             except Exception as e:
                 logging.error(f"Batch {batch} failed with error: {e}")
-                # Optionally handle the failed batch, e.g., retry or log
+                continue
 
     return results

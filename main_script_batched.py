@@ -78,7 +78,7 @@ def main():
     
     
     # creating jobs from case 1 mutations and running them
-    wt_job_generator, mutated_job_generator = prepare_jobs_from_df_batched(df, batch_size=1000)
+    wt_job_generator, mutated_job_generator = prepare_jobs_from_df_batched(case_1, batch_size=1000)
     wt_results = run_jobs_async_batched(wt_job_generator, 0, verbose)
     logging.info("Wild type jobs completed.")
     mutated_results = run_jobs_async_batched(mutated_job_generator, 1, verbose)

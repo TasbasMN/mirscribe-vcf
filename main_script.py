@@ -77,8 +77,10 @@ def main():
         logging.info(f"No case 2 mutations were found for {vcf_id}")
     
     
+    
+    
     # creating jobs from case 1 mutations and running them
-    wt_jobs, mutated_jobs = prepare_jobs_from_df(df)
+    wt_jobs, mutated_jobs = prepare_jobs_from_df(case_1)
     wt_results = run_jobs_async(wt_jobs, 0, verbose)
     logging.info("Wild type jobs completed.")
     mutated_results = run_jobs_async(mutated_jobs, 1, verbose)

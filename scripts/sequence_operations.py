@@ -1,4 +1,5 @@
 from scripts.globals import *
+import functools
 
 
 def calculate_au_content(sequence):
@@ -7,7 +8,7 @@ def calculate_au_content(sequence):
     return au_count / total_length if total_length > 0 else None
 
 
-
+@functools.lru_cache(maxsize=None)
 def get_nucleotides_in_interval(chrom, start, end):
     """
     Given a chromosome name, start and end positions, this function reads the DNA sequence from the corresponding FASTA file and returns the nucleotides in the specified interval.
@@ -135,20 +136,49 @@ def generate_mre_sequence(df):
 
 
 def add_sequence_columns(df):
+    grouped_df = df.groupby(['chr', 'pos', 'ref', 'alt'])
+
+    def process_group(group):
+        group['upstream_seq'] = group.apply(lambda row: get_upstream_sequence(row, NUCLEOTIDE_OFFSET), axis=1)
+        group['downstream_seq'] = group.apply(lambda row: get_downstream_sequence(row, NUCLEOTIDE_OFFSET), axis=1)
+        group['wt_seq'] = group["upstream_seq"] + group["ref"] + group["downstream_seq"]
+        group['mut_seq'] = group["upstream_seq"] + group["alt"] + group["downstream_seq"]
+        return group
+
+    df = grouped_df.apply(process_group)
+    return df.reset_index(drop=True)
+
+
+
+@functools.lru_cache(maxsize=None)  # Unlimited cache size
+def get_mre_sequence(mrna_sequence, mrna_end, mirna_start, mirna_length):
+    mre_end = mrna_end + mirna_start
+    mre_start = max(mre_end - mirna_length, 0)  # Ensure MRE start is not negative
+    return mrna_sequence[mre_start:mre_end]
+
+def generate_mre_sequence_optimized(df):
     """
-    Add columns for upstream, downstream, wild-type, and mutant sequences to a DataFrame.
+    Generate the miRNA response element (MRE) sequence for each row in the input DataFrame.
 
     Args:
-        df (pandas.DataFrame): The input DataFrame containing 'chr', 'pos', 'ref', and 'alt' columns.
+        df (pandas.DataFrame): A DataFrame containing columns 'mrna_sequence', 'mrna_end', 'mirna_start', and 'mirna_sequence'.
 
     Returns:
-        pandas.DataFrame: The input DataFrame with additional columns for 'upstream_seq', 'downstream_seq',
-                          'wt_seq', and 'mut_seq'.
+        pandas.DataFrame: The input DataFrame with new columns 'mre_start', 'mre_end', and 'mre_region' added.
     """
+    # Calculate miRNA length
+    df["mirna_length"] = df["mirna_sequence"].str.len()
 
-    df['upstream_seq'] = df.apply(lambda row: get_upstream_sequence(row, NUCLEOTIDE_OFFSET), axis=1)
-    df['downstream_seq'] = df.apply(lambda row: get_downstream_sequence(row, NUCLEOTIDE_OFFSET), axis=1)
-    df['wt_seq'] = df["upstream_seq"] + df["ref"] + df["downstream_seq"]
-    df['mut_seq'] = df["upstream_seq"] + df["alt"] + df["downstream_seq"]
+    # Use the cached function to calculate MRE sequences
+    df["mre_region"] = df.apply(lambda row: get_mre_sequence(
+        row["mrna_sequence"], row["mrna_end"], row["mirna_start"], row["mirna_length"]), axis=1)
+
+    # Calculate MRE coordinates for completeness in the DataFrame
+    df["mre_end"] = df["mrna_end"] + df["mirna_start"]
+    df["mre_start"] = df["mre_end"] - df["mirna_length"]
+    df["mre_start"] = df["mre_start"].clip(lower=0)
+
+    # Drop temporary column
+    df.drop(columns=["mirna_length"], inplace=True)
 
     return df
