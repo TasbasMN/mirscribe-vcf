@@ -47,10 +47,10 @@ def generate_match_count_columns(df):
         pandas.DataFrame: The input DataFrame with two new columns added.
     """
     # Count the number of '1' characters in the entire alignment string
-    df["pred_num_basepairs"] = df["alignment_string"].str.count("1")
+    df["pred_num_basepairs"] = df["alignment_string"].str.count("1").astype("uint8")
 
     # Count the number of '1' characters in the seed region (positions 2-7)
-    df["pred_seed_basepairs"] = df["alignment_string"].str.slice(1, 7).str.count("1")
+    df["pred_seed_basepairs"] = df["alignment_string"].str.slice(1, 7).str.count("1").astype("uint8")
 
     return df
 
