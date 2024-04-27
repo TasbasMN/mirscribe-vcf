@@ -33,6 +33,8 @@ def generate_alignment_string_from_dot_bracket(df):
     end_strings = (df['mirna_sequence'].str.len() - df['mirna_end'] - 1).apply(lambda x: '0' * x)
 
     df['alignment_string'] = start_strings + mid_strings + end_strings
+    df.drop(columns=["mrna_dot_bracket_5to3", "mirna_dot_bracket_5to3"], inplace=True)
+    
 
     return df
 
