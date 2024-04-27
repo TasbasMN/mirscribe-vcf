@@ -59,12 +59,13 @@ def generate_match_count_columns(df):
 def generate_ta_sps_columns(df):
     """
     Add 'ta_log10' and 'sps_mean' columns to the input DataFrame based on the miRNA seed sequence.
+    Downcast the new columns to the smallest numerical dtype possible.
 
     Args:
         df (pandas.DataFrame): A DataFrame containing the 'mirna_sequence' column.
 
     Returns:
-        pandas.DataFrame: The input DataFrame with 'ta_log10' and 'sps_mean' columns added.
+        pandas.DataFrame: The input DataFrame with 'ta_log10' and 'sps_mean' columns added and downcasted.
     """
     # Generate temporary seed column
     df["seed"] = df["mirna_sequence"].str.slice(1, 8).replace({'T': 'U'}, regex=True)
@@ -73,11 +74,13 @@ def generate_ta_sps_columns(df):
     ta_sps_df = ta_sps_df.rename(columns={"seed_8mer": "seed"})
     # Merge dataframes on seed column
     df = df.merge(ta_sps_df, on="seed", how="left")
+    # Downcast the new columns
+    df['ta_log10'] = pd.to_numeric(df['ta_log10'], downcast='float')
+    df['sps_mean'] = pd.to_numeric(df['sps_mean'], downcast='float')
     # Drop temporary column
     df.drop(columns=["seed"], inplace=True)
 
     return df
-
 
 def generate_important_sites(df):
     """
