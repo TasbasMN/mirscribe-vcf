@@ -46,12 +46,13 @@ def generate_is_mirna_column(df, grch):
 def generate_mirna_conservation_column(df):
     """
     Add a 'mirna_conservation' column to the input DataFrame based on miRNA conservation data.
+    Automatically downcast the 'mirna_conservation' column to the most appropriate numerical dtype.
 
     Args:
         df (pandas.DataFrame): A DataFrame containing the 'mirna_accession' column.
 
     Returns:
-        pandas.DataFrame: The input DataFrame with a 'mirna_conservation' column added.
+        pandas.DataFrame: The input DataFrame with a 'mirna_conservation' column added and automatically downcasted.
     """
     mirna_df = (pd.read_csv(MIRNA_CSV, 
                             usecols=["mirna_accession", "conservation"])
@@ -59,4 +60,8 @@ def generate_mirna_conservation_column(df):
                             [["mirna_accession", "mirna_conservation"]])
 
     df = df.merge(mirna_df, on="mirna_accession", how="left")
+    
+    # Downcast the 'mirna_conservation' column to 'integer' since all values are integers
+    df['mirna_conservation'] = pd.to_numeric(df['mirna_conservation'], downcast='integer')
+
     return df
