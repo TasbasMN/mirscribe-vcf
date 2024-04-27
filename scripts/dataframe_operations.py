@@ -169,6 +169,7 @@ def generate_mre_au_content_column(df):
 def generate_important_sites_optimized(df):
     """
     Optimized function to generate columns for important miRNA target site features.
+    Downcast binary columns to the smallest integer dtype.
 
     Args:
         df (pandas.DataFrame): A DataFrame containing the 'mre_region' and 'alignment_string' columns.
@@ -180,7 +181,7 @@ def generate_important_sites_optimized(df):
     consecutive_match_re = re.compile("1{9,}")
 
     # Anchor site
-    df["anchor_a"] = df["mre_region"].str.endswith("A").astype(int)
+    df["anchor_a"] = df["mre_region"].str.endswith("A").astype(np.int8)
 
     # Pre-calculate slices of 'alignment_string' to avoid repeated operations
     alignment_slice_1_7 = df["alignment_string"].str[1:7]
@@ -191,18 +192,18 @@ def generate_important_sites_optimized(df):
     alignment_slice_16_21 = df["alignment_string"].str[16:21]
 
     # Seed match features
-    df["6mer_seed"] = alignment_slice_1_7.apply(lambda x: x.count("0") == 0).astype(int)
-    df["match_8"] = (alignment_slice_7 == "1").astype(int)
-    df["6mer_seed_1_mismatch"] = alignment_slice_1_7.apply(lambda x: x.count("0") == 1).astype(int)
-    df["empty_seed"] = alignment_slice_1_8.apply(lambda x: x.count("1") == 0).astype(int)
+    df["6mer_seed"] = alignment_slice_1_7.apply(lambda x: x.count("0") == 0).astype(np.int8)
+    df["match_8"] = (alignment_slice_7 == "1").astype(np.int8)
+    df["6mer_seed_1_mismatch"] = alignment_slice_1_7.apply(lambda x: x.count("0") == 1).astype(np.int8)
+    df["empty_seed"] = alignment_slice_1_8.apply(lambda x: x.count("1") == 0).astype(np.int8)
 
     # Compensatory and supplementary sites
-    df["compensatory_site"] = alignment_slice_12_17.apply(lambda x: x.count("0") == 0).astype(int)
-    df["supplementary_site"] = alignment_slice_12_16.apply(lambda x: x.count("0") == 0).astype(int)
-    df["supplementary_site_2"] = alignment_slice_16_21.apply(lambda x: x.count("0") == 0).astype(int)
+    df["compensatory_site"] = alignment_slice_12_17.apply(lambda x: x.count("0") == 0).astype(np.int8)
+    df["supplementary_site"] = alignment_slice_12_16.apply(lambda x: x.count("0") == 0).astype(np.int8)
+    df["supplementary_site_2"] = alignment_slice_16_21.apply(lambda x: x.count("0") == 0).astype(np.int8)
 
     # Consecutive match
-    df["9_consecutive_match_anywhere"] = df["alignment_string"].apply(lambda x: bool(consecutive_match_re.search(x))).astype(int)
+    df["9_consecutive_match_anywhere"] = df["alignment_string"].apply(lambda x: bool(consecutive_match_re.search(x))).astype(np.int8)
 
     return df
 
