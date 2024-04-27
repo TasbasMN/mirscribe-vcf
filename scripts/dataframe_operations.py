@@ -2,6 +2,7 @@ import pandas as pd
 from scripts.globals import TA_SPS_CSV
 import re
 import functools
+import numpy as np
 
 def create_results_dataframe(wt_array, mutated_array):
     """Create a consolidated dataframe from the results."""
@@ -115,6 +116,7 @@ def generate_important_sites(df):
 def generate_seed_type_columns(df):
     """
     Generate columns for different types of miRNA seed matches.
+    Downcast new binary columns to the smallest integer dtype.
 
     Args:
         df (pandas.DataFrame): A DataFrame containing columns for various miRNA target site features.
@@ -128,9 +130,9 @@ def generate_seed_type_columns(df):
     has_match_8 = (df['match_8'] == 1)
     no_supplementary_sites = (df['supplementary_site'] == 0) & (df['supplementary_site_2'] == 0)
 
-    df['seed_8mer'] = (has_anchor_a & has_6mer_seed & has_match_8).astype(int)
-    df['seed_7mer_a1'] = (has_anchor_a & has_6mer_seed & ~has_match_8).astype(int)
-    df['seed_7mer_m8'] = (~has_anchor_a & has_6mer_seed & has_match_8 & no_supplementary_sites).astype(int)
+    df['seed_8mer'] = (has_anchor_a & has_6mer_seed & has_match_8).astype(np.int8)
+    df['seed_7mer_a1'] = (has_anchor_a & has_6mer_seed & ~has_match_8).astype(np.int8)
+    df['seed_7mer_m8'] = (~has_anchor_a & has_6mer_seed & has_match_8 & no_supplementary_sites).astype(np.int8)
 
     # Non-canonical seed matches
     has_compensatory_site = (df['compensatory_site'] == 1)
@@ -141,11 +143,11 @@ def generate_seed_type_columns(df):
     has_9_consecutive_match = (df['9_consecutive_match_anywhere'] == 1)
     has_many_basepairs = (df['pred_num_basepairs'] > 10)
 
-    df['seed_compensatory'] = (has_compensatory_site & has_6mer_seed_1_mismatch & has_match_8).astype(int)
-    df['seed_clash_2'] = (has_supplementary_site & has_6mer_seed & has_match_8).astype(int)
-    df['seed_clash_3'] = (has_supplementary_site_2 & has_6mer_seed & has_match_8).astype(int)
-    df['seed_clash_4'] = (has_empty_seed & has_9_consecutive_match).astype(int)
-    df['seed_clash_5'] = (has_many_basepairs & ~has_6mer_seed).astype(int)
+    df['seed_compensatory'] = (has_compensatory_site & has_6mer_seed_1_mismatch & has_match_8).astype(np.int8)
+    df['seed_clash_2'] = (has_supplementary_site & has_6mer_seed & has_match_8).astype(np.int8)
+    df['seed_clash_3'] = (has_supplementary_site_2 & has_6mer_seed & has_match_8).astype(np.int8)
+    df['seed_clash_4'] = (has_empty_seed & has_9_consecutive_match).astype(np.int8)
+    df['seed_clash_5'] = (has_many_basepairs & ~has_6mer_seed).astype(np.int8)
 
     return df
 
