@@ -1,5 +1,6 @@
 from scripts.globals import *
-import functools
+from functools import lru_cache
+import pandas as pd
 
 
 def calculate_au_content(sequence):
@@ -8,7 +9,7 @@ def calculate_au_content(sequence):
     return au_count / total_length if total_length > 0 else None
 
 
-@functools.lru_cache(maxsize=None)
+@lru_cache(maxsize=None)
 def get_nucleotides_in_interval(chrom, start, end):
     """
     Given a chromosome name, start and end positions, this function reads the DNA sequence from the corresponding FASTA file and returns the nucleotides in the specified interval.
@@ -21,6 +22,10 @@ def get_nucleotides_in_interval(chrom, start, end):
     Returns:
     - nucleotides (str): The nucleotides in the specified interval.
     """
+    
+    # change chrom into str
+    chrom = str(chrom)
+    
     file_path = f"{GRCH37_DIR}/Homo_sapiens.GRCh37.dna.chromosome.{chrom}.fa"
     with open(file_path, 'r') as file:
         file.readline()
@@ -42,7 +47,7 @@ def get_nucleotides_in_interval(chrom, start, end):
 
     return nucleotides
 
-
+@lru_cache(maxsize=None) 
 def get_nucleotide_at_position(chrom, position):
     """
     Given a chromosome name and a position, this function reads the DNA sequence from the corresponding FASTA file and returns the nucleotide at the specified position.
@@ -68,8 +73,8 @@ def get_nucleotide_at_position(chrom, position):
         nucleotide = file.read(1)
     return nucleotide
 
-
-def get_upstream_sequence(row, n=30):
+@lru_cache(maxsize=None) 
+def get_upstream_sequence(chrom, pos, n=30):
     """
     Get the upstream sequence of length n from the given position.
 
@@ -80,31 +85,30 @@ def get_upstream_sequence(row, n=30):
     Returns:
         str: The upstream sequence.
     """
-    chrom = row['chr']
-    pos = row['pos']
-    upstream_start = max(1, pos - n)
-    upstream_end = pos - 1
+    int_pos = int(pos)
+    upstream_start = max(1, int_pos - n)
+    upstream_end = int_pos - 1
     return get_nucleotides_in_interval(chrom, upstream_start, upstream_end)
 
-
-def get_downstream_sequence(row, n=30):
+@lru_cache(maxsize=None) 
+def get_downstream_sequence(chrom, pos, ref, n=30):
     """
     Get the downstream sequence of length n from the given position.
 
     Args:
-        row (pandas.Series): A row from the DataFrame containing the 'chr', 'pos', and 'ref_len' columns.
+        chrom (str): The chromosome name.
+        pos (int): The position.
+        ref (str): The reference allele.
         n (int, optional): The length of the downstream sequence. Defaults to 30.
 
     Returns:
         str: The downstream sequence.
     """
-    chrom = row['chr']
-    pos = row['pos']
-    ref_len = len(row['ref'])
-    downstream_start = pos + ref_len
+    int_pos = int(pos)
+    ref_len = len(ref)
+    downstream_start = int_pos + ref_len
     downstream_end = downstream_start + n - 1
     return get_nucleotides_in_interval(chrom, downstream_start, downstream_end)
-
 
 def generate_mre_sequence(df):
     """
@@ -136,25 +140,34 @@ def generate_mre_sequence(df):
 
 
 def add_sequence_columns(df):
-    grouped_df = df.groupby(['chr', 'pos', 'ref', 'alt'])
+    grouped = df.groupby(['chr', 'pos'])
 
-    def process_group(group):
-        group['upstream_seq'] = group.apply(lambda row: get_upstream_sequence(row, NUCLEOTIDE_OFFSET), axis=1)
-        group['downstream_seq'] = group.apply(lambda row: get_downstream_sequence(row, NUCLEOTIDE_OFFSET), axis=1)
-        group['wt_seq'] = group["upstream_seq"] + group["ref"] + group["downstream_seq"]
-        group['mut_seq'] = group["upstream_seq"] + group["alt"] + group["downstream_seq"]
+    def apply_func(group):
+        group['upstream_seq'] = get_upstream_sequence(group['chr'].iloc[0], group['pos'].iloc[0], NUCLEOTIDE_OFFSET)
+        group['downstream_seq'] = get_downstream_sequence(group['chr'].iloc[0], group['pos'].iloc[0], group['ref'].iloc[0], NUCLEOTIDE_OFFSET)
+        group['wt_seq'] = group['upstream_seq'] + group['ref'] + group['downstream_seq']
+        group['mut_seq'] = group['upstream_seq'] + group['alt'] + group['downstream_seq']
         return group
 
-    df = grouped_df.apply(process_group)
-    return df.reset_index(drop=True)
+    df = grouped.apply(apply_func)
+    
+    df = df.reset_index(drop=True)
+    
+    df['mrna_sequence'] = df['wt_seq'].where(~df['is_mutated'], df['mut_seq'])
+
+    column_names = ["chr", "pos", "ref", "alt", "upstream_seq", "downstream_seq", "wt_seq", "mut_seq"]
+    df.drop(columns=column_names, inplace=True)
+
+    return df
 
 
 
-@functools.lru_cache(maxsize=None)  # Unlimited cache size
+@lru_cache(maxsize=None) 
 def get_mre_sequence(mrna_sequence, mrna_end, mirna_start, mirna_length):
     mre_end = mrna_end + mirna_start
     mre_start = max(mre_end - mirna_length, 0)  # Ensure MRE start is not negative
     return mrna_sequence[mre_start:mre_end]
+
 
 def generate_mre_sequence_optimized(df):
     """
@@ -181,4 +194,23 @@ def generate_mre_sequence_optimized(df):
     # Drop temporary column
     df.drop(columns=["mirna_length"], inplace=True)
 
+    return df
+
+
+
+@lru_cache(maxsize=None)
+def split_mutation_id_cached(mutation_id):
+    return mutation_id.split('_')
+
+
+def split_mutation_ids(df):
+    # Create a list of column names for the new columns
+    new_column_names = ['vcf_id', 'chr', 'pos', 'ref', 'alt']
+
+    # Add the new columns to the original DataFrame
+    df[new_column_names] = pd.DataFrame(df['mutation_id'].apply(split_mutation_id_cached).tolist(), index=df.index, columns=new_column_names)
+
+    # Drop the 'mutation_id' column
+    df.drop(['mutation_id', "vcf_id"], axis=1, inplace=True)
+    
     return df

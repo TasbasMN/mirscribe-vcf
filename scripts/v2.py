@@ -270,10 +270,10 @@ def import_combined_csv(combined_csv):
         return None
     
     # Create id column
-    df["id"] = df["mutation_id"] + "_" + df["mirna_accession"].astype(str)
+    df["id"] = df["mutation_id"] + "_" + df["mirna_accession"]
 
-    # Convert is_mutated to integer
-    df['is_mutated'] = (df['is_mutated'] != 'wt').astype(int)
+    # Convert is_mutated to bool
+    df['is_mutated'] = df['is_mutated'].isin(['mt', 'mut'])
 
     logging.debug("Adding mirna sequences")
     try:
@@ -284,27 +284,28 @@ def import_combined_csv(combined_csv):
     df["mirna_sequence"] = df["mirna_accession"].map(mirna_dict)
 
     # Unpack mutation_id column
-    df[['vcf_id', 'chr', 'pos', 'ref', 'alt']] = df['mutation_id'].str.split('_', expand=True)
-    df['chr'] = pd.to_numeric(df['chr'], errors='coerce')
-    df['pos'] = pd.to_numeric(df['pos'], errors='coerce')
-    
-    # Check if any NaNs were introduced by coerce
-    if df['chr'].isna().any() or df['pos'].isna().any():
-        logging.warning("NaNs introduced in 'chr' or 'pos' columns during numeric conversion")
-        logging.info(f"Number of NaNs in 'chr': {df['chr'].isna().sum()}, number of NaNs in 'pos': {df['pos'].isna().sum()}")
-
+    df = split_mutation_ids(df)
 
     # Add sequence columns
     df = add_sequence_columns(df)
-
-    # Set mrna_sequence based on is_mutated
-    df["mrna_sequence"] = df.apply(lambda row: row["wt_seq"] if row["is_mutated"] == 0 else row["mut_seq"], axis=1)
-
-    columns_to_drop = ['ref', 'chr', 'alt', 'downstream_seq', 'vcf_id', 'mutation_id', 'mut_seq', 'upstream_seq', 'pos', 'wt_seq']
-    # Drop unnecessary columns
-    df.drop(columns=columns_to_drop, inplace=True)
 
     logging.debug("Combined csv importing & processing completed")
     return df
 
 
+def downcast_df(df):
+    # Log the initial RAM allocation
+    logging.info(f"Initial RAM allocation: {df.memory_usage(deep=True).sum() / (1024 ** 2):.2f} MB")
+
+    for column in df.columns:
+        if df[column].dtype == 'object':
+            df[column] = df[column].astype('category')
+        elif df[column].dtype == 'float64':
+            df[column] = pd.to_numeric(df[column], downcast='float')
+        else:
+            df[column] = pd.to_numeric(df[column], downcast='integer')
+
+    # Log the final RAM allocation
+    logging.info(f"Final RAM allocation: {df.memory_usage(deep=True).sum() / (1024 ** 2):.2f} MB")
+
+    return df
