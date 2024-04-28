@@ -27,9 +27,10 @@ def log_step_duration_to_file(output_dir, step_name, duration):
         "Step 2": "Augment ID, validate ref nucleotides, generate is_mirna column, add sequence columns, classify and get case 1 mutations",
         "Step 3": "Prepare job FASTAs",
         "Step 4": "Process FASTA files in parallel and stitch CSV files",
-        "Step 5": "Import combined CSV, generate feature columns",
-        "Step 6": "Make predictions",
-        "Step 7": "Save meaningful results to CSV"
+        "Step 5": "Import combined CSV",
+        "Step 6": "Generate feature columns",
+        "Step 7": "Make predictions",
+        "Step 8": "Save meaningful results to CSV"
     }
 
     description = step_descriptions.get(step_name, "")
@@ -49,11 +50,13 @@ def log_step_duration_to_file(output_dir, step_name, duration):
 def main():
     pipeline_start_time = time.time()
     
+    
     # Step 1
     step_start_time = time.time()
     df = load_vcf_into_df(vcf_file_path, start, end)
     log_step_completion("Step 1", step_start_time)
     log_step_duration_to_file(output_dir, "Step 1", time.time() - step_start_time)
+
 
     # Step 2
     step_start_time = time.time()
@@ -65,11 +68,13 @@ def main():
     log_step_completion("Step 2", step_start_time)
     log_step_duration_to_file(output_dir, "Step 2", time.time() - step_start_time)
 
+
     # Step 3
     step_start_time = time.time()
     prepare_job_fastas(case_1, output_dir, vcf_id)
     log_step_completion("Step 3", step_start_time)
     log_step_duration_to_file(output_dir, "Step 3", time.time() - step_start_time)
+    
     
     # Step 4
     step_start_time = time.time()
@@ -78,37 +83,47 @@ def main():
     log_step_completion("Step 4", step_start_time)
     log_step_duration_to_file(output_dir, "Step 4", time.time() - step_start_time)
 
+
     # Step 5
     step_start_time = time.time()
     df = import_combined_csv(combined_csv)
-    df = generate_alignment_string_from_dot_bracket(df)
-    
-    # df.to_csv(os.path.join(output_dir, f"{vcf_id}_{start}_{end}_checkpoint.csv"), index=False)
-    df = generate_match_count_columns(df)
-    df = generate_ta_sps_columns(df)
-    df = generate_mre_sequence(df)
-    df = generate_important_sites_optimized(df)
-    df = generate_mirna_conservation_column(df)
-    df = generate_seed_type_columns(df)
-    df = generate_mre_au_content_column(df)
-    df = generate_local_au_content_column(df)
-    # df.to_csv(os.path.join(output_dir, f"{vcf_id}_{start}_{end}_checkpoint_2.csv"), index=False)
-    
     log_step_completion("Step 5", step_start_time)
     log_step_duration_to_file(output_dir, "Step 5", time.time() - step_start_time)
+    
 
     # Step 6
     step_start_time = time.time()
-    pred_df = make_predictions(df)
+    df = process_df_for_prediction(df)
     log_step_completion("Step 6", step_start_time)
     log_step_duration_to_file(output_dir, "Step 6", time.time() - step_start_time)
-
-    # Step 7
+    
+    
+   # Step 7
     step_start_time = time.time()
-    meaningful_results_file = os.path.join(output_dir, f"{vcf_id}_{start}_{end}_meaningful_results.csv")
-    pred_df[pred_df.pred_difference_binary != 0].to_csv(meaningful_results_file, index=False)
+    pred_df = make_predictions(df)
     log_step_completion("Step 7", step_start_time)
     log_step_duration_to_file(output_dir, "Step 7", time.time() - step_start_time)
+    
+
+   # Step 8
+    step_start_time = time.time()
+
+    meaningful_results_file = os.path.join(output_dir, f"{vcf_id}_{start}_{end}_meaningful_results.csv")
+    pred_df[pred_df.pred_difference_binary != 0].to_csv(meaningful_results_file, index=False)
+    
+    log_step_completion("Step 8", step_start_time)
+    log_step_duration_to_file(output_dir, "Step 8", time.time() - step_start_time)
+
+
+
+
+
+
+    
+    
+    
+
+ 
     
     # Log the total duration of the job
     end_time = time.time()
@@ -151,6 +166,7 @@ if __name__ == "__main__":
         profiler.enable()
     
     main()
+    
     if args.profile:
         profiler.disable()
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')

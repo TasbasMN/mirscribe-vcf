@@ -261,7 +261,7 @@ def stitch_csv_files(work_dir, vcf_id, start, end):
 
 def import_combined_csv(combined_csv):
     logging.debug(f"Processing combined csv from {combined_csv}")
-    
+
     colnames = ["mutation_id", "mirna_accession", "mrna_dot_bracket_5to3", "mirna_dot_bracket_5to3", "mrna_start", "mrna_end", "mirna_start", "mirna_end", "pred_energy", "is_mutated"]
     try:
         df = pd.read_csv(combined_csv, header=None, names=colnames)
@@ -271,8 +271,8 @@ def import_combined_csv(combined_csv):
 
     # augments id
     df["id"] = df["mutation_id"] + "_" + df["mirna_accession"] + "_" + df["is_mutated"]
-    df.sort_values("id", inplace=True)
-    
+    df = df.sort_values("id")
+
     logging.debug("Combined csv imported")
     return df
 
@@ -291,5 +291,61 @@ def downcast_df(df):
 
     # Log the final RAM allocation
     logging.info(f"Final RAM allocation: {df.memory_usage(deep=True).sum() / (1024 ** 2):.2f} MB")
+
+    return df
+
+
+
+
+import pandas as pd
+
+def process_df_for_prediction(df):
+    """
+    Process the input dataframe by adding various columns and performing operations.
+
+    Args:
+        df (pandas.DataFrame): The input dataframe.
+
+    Returns:
+        pandas.DataFrame: The processed dataframe.
+    """
+    ## Add miRNA sequence
+    mirna_dict = pd.read_csv(MIRNA_CSV).set_index('mirna_accession')['sequence'].to_dict()
+    df["mirna_sequence"] = df["mirna_accession"].map(mirna_dict)
+
+    ## Add miRNA conservation
+    df = generate_mirna_conservation_column(df)
+    df.drop("mirna_accession", axis=1, inplace=True)
+
+    ## Add mRNA sequence
+    df = split_mutation_ids(df)
+    df['is_mutated'] = df['is_mutated'].isin(['mt', 'mut'])
+    df = add_sequence_columns(df)
+    df.drop("is_mutated", axis=1, inplace=True)
+
+    ## Generate MRE sequence
+    df = generate_mre_sequence(df)
+    df.drop(columns=["mrna_start", "mrna_end", "mre_start", "mre_end"], inplace=True)
+
+    ## Generate local AU content
+    df = generate_local_au_content_column(df)
+    df.drop("mrna_sequence", axis=1, inplace=True)
+
+    ## Generate TA SPS columns
+    df = generate_ta_sps_columns(df)
+
+    ## Generate alignment string from dot bracket
+    df = generate_alignment_string_from_dot_bracket(df)
+    df.drop(columns=["mirna_start", "mirna_end", "mirna_sequence"], inplace=True)
+
+    ## Generate match count columns and important sites
+    df = generate_match_count_columns(df)
+    df = generate_important_sites_optimized(df)
+    df = generate_seed_type_columns(df)
+    df.drop("alignment_string", axis=1, inplace=True)
+
+    ## Generate MRE AU content
+    df = generate_mre_au_content_column(df)
+    df.drop("mre_region", axis=1, inplace=True)
 
     return df
