@@ -26,5 +26,6 @@ NUCLEOTIDE_OFFSET = 30
 
 AWK_SCRIPT_PATH = "scripts/rnaduplex_to_csv.awk"
 
+QUANTILE_RANGE = 0.25
 
 

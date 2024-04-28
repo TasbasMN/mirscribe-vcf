@@ -151,14 +151,9 @@ def add_sequence_columns(df):
 
     df = grouped.apply(apply_func)
     
-    df = df.reset_index(drop=True)
-    
-    df['mrna_sequence'] = df['wt_seq'].where(~df['is_mutated'], df['mut_seq'])
 
-    column_names = ["chr", "pos", "ref", "alt", "upstream_seq", "downstream_seq", "wt_seq", "mut_seq"]
-    df.drop(columns=column_names, inplace=True)
 
-    return df
+    return df.reset_index(drop=True)
 
 
 

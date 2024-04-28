@@ -321,7 +321,9 @@ def process_df_for_prediction(df):
     df = split_mutation_ids(df)
     df['is_mutated'] = df['is_mutated'].isin(['mt', 'mut'])
     df = add_sequence_columns(df)
-    df.drop("is_mutated", axis=1, inplace=True)
+    df['mrna_sequence'] = df['wt_seq'].where(~df['is_mutated'], df['mut_seq'])
+    column_names = ["chr", "pos", "ref", "alt", "upstream_seq", "downstream_seq", "wt_seq", "mut_seq", "is_mutated"]
+    df.drop(columns=column_names, inplace=True)
 
     ## Generate MRE sequence
     df = generate_mre_sequence(df)

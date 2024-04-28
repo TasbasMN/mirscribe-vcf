@@ -100,29 +100,19 @@ def main():
     
    # Step 7
     step_start_time = time.time()
-    pred_df = make_predictions(df)
+    df, id_array = reorder_columns_for_prediction(df)
+    predictions = make_predictions_with_xgb(df)
+    pred_df = create_prediction_result_df(id_array, predictions, filter_range=QUANTILE_RANGE, brief_output=False)
     log_step_completion("Step 7", step_start_time)
     log_step_duration_to_file(output_dir, "Step 7", time.time() - step_start_time)
     
 
    # Step 8
     step_start_time = time.time()
-
     meaningful_results_file = os.path.join(output_dir, f"{vcf_id}_{start}_{end}_meaningful_results.csv")
-    pred_df[pred_df.pred_difference_binary != 0].to_csv(meaningful_results_file, index=False)
-    
+    pred_df.to_csv(meaningful_results_file, index=False)
     log_step_completion("Step 8", step_start_time)
     log_step_duration_to_file(output_dir, "Step 8", time.time() - step_start_time)
-
-
-
-
-
-
-    
-    
-    
-
  
     
     # Log the total duration of the job
