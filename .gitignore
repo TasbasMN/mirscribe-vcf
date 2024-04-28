@@ -13,3 +13,6 @@ data/**/*.fa
 # TODO
 TODO.md
 checkpoint.csv
+last_step_pred.ipynb
+test_crash_before_prediction.csv
+test_crash.py

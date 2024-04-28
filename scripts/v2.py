@@ -268,28 +268,12 @@ def import_combined_csv(combined_csv):
     except FileNotFoundError:
         logging.error(f"File not found: {combined_csv}")
         return None
+
+    # augments id
+    df["id"] = df["mutation_id"] + "_" + df["mirna_accession"] + "_" + df["is_mutated"]
+    df.sort_values("id", inplace=True)
     
-    # Create id column
-    df["id"] = df["mutation_id"] + "_" + df["mirna_accession"]
-
-    # Convert is_mutated to bool
-    df['is_mutated'] = df['is_mutated'].isin(['mt', 'mut'])
-
-    logging.debug("Adding mirna sequences")
-    try:
-        mirna_dict = pd.read_csv(MIRNA_CSV).set_index('mirna_accession')['sequence'].to_dict()
-    except FileNotFoundError:
-        logging.error(f"File not found: {MIRNA_CSV}")
-        return None
-    df["mirna_sequence"] = df["mirna_accession"].map(mirna_dict)
-
-    # Unpack mutation_id column
-    df = split_mutation_ids(df)
-
-    # Add sequence columns
-    df = add_sequence_columns(df)
-
-    logging.debug("Combined csv importing & processing completed")
+    logging.debug("Combined csv imported")
     return df
 
 

@@ -2,14 +2,14 @@ import xgboost as xgb
 from scripts.globals import XGB_MODEL
 
 
-def make_predictions_regressor(df, df_filtered, model_name=XGB_MODEL):
+def make_predictions_regressor(df, df_filtered):
 
     # Create an empty DMatrix model
     dmatrix_model = xgb.DMatrix(df_filtered)
 
     # Load the pre-trained model
     model = xgb.Booster()
-    model.load_model(model_name)
+    model.load_model(XGB_MODEL)
 
     # Make predictions on the df_filtered DataFrame
     predictions = model.predict(dmatrix_model)
