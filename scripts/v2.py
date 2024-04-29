@@ -12,6 +12,46 @@ import time
 from scripts import *
 
 
+def setup_logging_and_log_steps(output_dir, verbose=False):
+    # Set up logging
+    log_level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
+
+    if verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    # Define step descriptions
+    step_descriptions = {
+        "Step 1": "Load VCF into DataFrame",
+        "Step 2": "Augment ID, validate ref nucleotides, generate is_mirna column, add sequence columns, classify and get case 1 mutations",
+        "Step 3": "Prepare job FASTAs",
+        "Step 4": "Process FASTA files in parallel and stitch CSV files",
+        "Step 5": "Import combined CSV",
+        "Step 6": "Generate feature columns",
+        "Step 7": "Make predictions",
+        "Step 8": "Save meaningful results to CSV"
+    }
+
+    def log_step_completion(step_name, step_start_time):
+        end_time = time.time()
+        duration = end_time - step_start_time
+        logging.info(f"{step_name} completed in {duration:.2f} seconds")
+        log_step_duration_to_file(step_name, duration)
+
+    def log_step_duration_to_file(step_name, duration):
+        description = step_descriptions.get(step_name, "")
+
+        log_file = os.path.join(output_dir, "step_durations.csv")
+        file_exists = os.path.isfile(log_file)
+        with open(log_file, 'a', newline='') as csvfile:
+            fieldnames = ['Step Name', 'Duration (seconds)', 'Description']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow({'Step Name': step_name, 'Duration (seconds)': duration, 'Description': description})
+
+    return log_step_completion
+
 def classify_and_get_case_1_mutations(df, vcf_id, start, end, output_dir):
     """
     Classifies mutations into case 1 and case 2, saves case 2 mutations to disk,
