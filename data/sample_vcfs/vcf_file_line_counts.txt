@@ -5,7 +5,9 @@ PD3905a.vcf line count: 4587
 PD3945a.vcf line count: 10308
 PD4005a.vcf line count: 6104
 PD4006a.vcf line count: 9194
+
 PD4085a.vcf line count: 2673
+
 PD4086a.vcf line count: 2199
 PD4088a.vcf line count: 1705
 PD4103a.vcf line count: 5360

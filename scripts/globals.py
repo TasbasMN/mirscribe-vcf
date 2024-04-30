@@ -4,6 +4,8 @@ def get_pyensembl_cache_location():
     hostname = gethostname()
     if hostname == "nazo":
         return "/home/nazif/thesis/data"
+    elif hostname == "Minerva":
+        return "/home/yamak/Code/nazif/data"
     else:
         return "/truba/home/mtasbas/data"
 
@@ -11,6 +13,8 @@ def get_rnaduplex_location():
     hostname = gethostname()
     if hostname == "nazo":
         return "/usr/local/bin/RNAduplex"
+    elif hostname == "Minerva":
+        return "/usr/bin/RNAduplex"
     else:
         return "/truba/home/mtasbas/miniconda3/envs/venv/bin/RNAduplex"
     
