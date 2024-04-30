@@ -34,17 +34,23 @@ def process_chunk(chunk: pd.DataFrame, start_index: int, end_index: int, output_
 
 def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output_dir: str, vcf_id: str, verbose: bool = False,) -> pd.DataFrame:
 
-    invalid_rows_report_file = os.path.join(output_dir, f"{vcf_id}_invalid_rows.csv")
-    fasta_output_file = os.path.join(output_dir, f"{vcf_id}_{start_index}_{end_index}.fa")
     rnaduplex_output_file = os.path.join(output_dir, f"{vcf_id}_{start_index}_{end_index}.csv")
+    
+    if not SKIP_RNADUPLEX:
+        invalid_rows_report_file = os.path.join(output_dir, f"{vcf_id}_invalid_rows.csv")
+        fasta_output_file = os.path.join(output_dir, f"{vcf_id}_{start_index}_{end_index}.fa")
 
-    df['id'] += '_' + df['chr'].astype(str) + '_' + df['pos'].astype(str) + '_' + df['ref'] + '_' + df['alt']
-    df = validate_ref_nucleotides_sharded(df, invalid_rows_report_file)
-    df = generate_is_mirna_column(df, grch=37)
-    df = add_sequence_columns(df)
-    case_1 = classify_and_get_case_1_mutations(df, vcf_id, start_index, end_index, output_dir)  
-    prepare_job_fastas_sharded(case_1, fasta_output_file)
-    run_rnaduplex_and_awk_sharded(fasta_output_file, rnaduplex_output_file)
+        df['id'] += '_' + df['chr'].astype(str) + '_' + df['pos'].astype(str) + '_' + df['ref'] + '_' + df['alt']
+        df = validate_ref_nucleotides_sharded(df, invalid_rows_report_file)
+        df = generate_is_mirna_column(df, grch=37)
+        df = add_sequence_columns(df)
+        case_1 = classify_and_get_case_1_mutations(df, vcf_id, start_index, end_index, output_dir)  
+        prepare_job_fastas_sharded(case_1, fasta_output_file)
+        run_rnaduplex_and_awk_sharded(fasta_output_file, rnaduplex_output_file)
+
+
+
+
 
 
     colnames = ["mutation_id", "mirna_accession", "mrna_dot_bracket_5to3", "mirna_dot_bracket_5to3", "mrna_start", "mrna_end", "mirna_start", "mirna_end", "pred_energy", "is_mutated"]
@@ -83,11 +89,10 @@ def run_vcf_analysis(vcf_full_path: str, chunksize: int, output_dir: str, vcf_id
     total_start_time = datetime.now()
     report_file = os.path.join(output_dir, 'analysis.csv')
 
-    with ThreadPoolExecutor() as executor, open(report_file, 'w') as report:
+    with ThreadPoolExecutor(max_workers=WORKERS) as executor, open(report_file, 'w') as report:
         report.write(f"start_index,end_index,time_elapsed\n")
         report.write(f"start,time,{total_start_time}\n")
         
-
         futures = []
         start_index = 0
         for chunk in pd.read_csv(vcf_full_path, chunksize=chunksize, sep="\t", header=None, names=["chr", "pos", "id", "ref", "alt"]):
@@ -114,13 +119,21 @@ def main():
     parser.add_argument("-c", '--chunksize', default=100, type=int, help='Number of lines to process per chunk')
     parser.add_argument("-o", '--output_dir', type=str, default='./results', help='Path to the output directory')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
-
+    parser.add_argument('-w', '--workers', default=os.cpu_count(), type=int, help='Number of concurrent workers')
+    parser.add_argument('--skip-rnaduplex', action='store_true', help='Skip RNAduplex analysis')
+    
     args = parser.parse_args()
 
     VCF_FULL_PATH = args.file_path
     VCF_ID = os.path.basename(VCF_FULL_PATH).split(".")[0]
     VERBOSE = args.verbose
     chunksize = args.chunksize
+    
+    global WORKERS
+    WORKERS = args.workers
+    
+    global SKIP_RNADUPLEX
+    SKIP_RNADUPLEX = args.skip_rnaduplex
     
     OUTPUT_DIR = os.path.join(args.output_dir, f"{VCF_ID}_{chunksize}")
     os.makedirs(OUTPUT_DIR, exist_ok=True)  # Create the output directory if it doesn't exist
