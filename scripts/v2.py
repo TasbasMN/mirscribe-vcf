@@ -183,7 +183,6 @@ def prepare_job_fastas(df, output_dir, vcf_id):
             logging.debug(f'Wrote chunk {i}, indices {start_index}-{end_index}')
         except Exception as e:
             logging.error(f'Error writing chunk {i}, indices {start_index}-{end_index}: {e}')
-
                 
     
 def run_rnaduplex_and_awk(input_file, awk_script_path, output_file):

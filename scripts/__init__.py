@@ -8,3 +8,4 @@ from .truba_operations import *
 from .vcf_processing import *
 from .xgb_operations import *
 from .v2 import *
+from .v3 import *
