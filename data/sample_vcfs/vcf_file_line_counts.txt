@@ -13,10 +13,10 @@ PD4107a.vcf line count: 10291, minerva
 PD4109a.vcf line count: 9888
 PD4115a.vcf line count: 9954
 PD4116a.vcf line count: 8026
-PD4120a.vcf line count: 70690, overnight
+PD4120a.vcf line count: 70690
 
-PD4192a.vcf line count: 3919
-PD4194a.vcf line count: 1484
-PD4198a.vcf line count: 4552
-PD4199a.vcf line count: 6932
-PD4248a.vcf line count: 2536
+PD4192a.vcf line count: 3919, truba
+PD4194a.vcf line count: 1484, truba
+PD4198a.vcf line count: 4552, truba
+PD4199a.vcf line count: 6932, truba
+PD4248a.vcf line count: 2536, truba
