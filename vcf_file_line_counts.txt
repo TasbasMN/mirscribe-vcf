@@ -1,0 +1,23 @@
+PD3851a.vcf line count: 1782, local
+PD3890a.vcf line count: 6124,
+PD3904a.vcf line count: 5608
+PD3905a.vcf line count: 4587
+PD3945a.vcf line count: 10308, local
+PD4005a.vcf line count: 6104, crashed at -c 400 local
+PD4006a.vcf line count: 9194
+PD4085a.vcf line count: 2673, local
+PD4086a.vcf line count: 2199, local
+PD4088a.vcf line count: 1705, local
+PD4103a.vcf line count: 5360
+PD4107a.vcf line count: 10291, yamaç
+PD4109a.vcf line count: 9888, yamaç
+PD4115a.vcf line count: 9954, yamaç
+PD4116a.vcf line count: 8026, yamaç
+
+PD4120a.vcf line count: 70690, queued on truba
+
+PD4192a.vcf line count: 3919, running on yamaç
+PD4194a.vcf line count: 1484, 
+PD4198a.vcf line count: 4552, 
+PD4199a.vcf line count: 6932, 
+PD4248a.vcf line count: 2536, 
