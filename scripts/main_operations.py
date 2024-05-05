@@ -2,7 +2,6 @@ import psutil
 import os
 import zipfile
 import pandas as pd
-from scripts.globals import *
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
