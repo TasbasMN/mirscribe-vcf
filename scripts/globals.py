@@ -32,4 +32,7 @@ AWK_SCRIPT_PATH = "scripts/rnaduplex_to_csv.awk"
 
 QUANTILE_RANGE = 0.25
 
+WT_THRESHOLD = 0.5
+MUT_THRESHOLD = 0.5
+MUTSIG_PROBABILITIES = "data/mutsig_probabilities/probabilities.csv"
 
