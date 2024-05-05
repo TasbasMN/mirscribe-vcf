@@ -7,7 +7,7 @@ from scripts.globals import *
 from scripts.mirna_operations import *
 from scripts.pyensembl_operations import *
 from scripts.rnaduplex_operations import *
-from scripts.sequence_operations import *
+from scripts.utils.sequence_utils import *
 from scripts.truba_operations import *
 from scripts.vcf_processing import *
 from scripts.xgb_operations import *
