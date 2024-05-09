@@ -9,3 +9,6 @@ scripts/**/*.pyc
 
 # genome FASTA files
 data/**/*.fa
+
+# vscode config
+.vscode
