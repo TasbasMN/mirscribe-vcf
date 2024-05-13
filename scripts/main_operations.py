@@ -65,10 +65,14 @@ def stitch_csv_files(output_dir: str, final_output_filename: str):
 
 
 def remove_small_stitched_files(output_dir: str, exclude_filename: str):
-
     # List all files in the output directory that match the pattern and are not the final stitched file
-    files_to_remove = [f for f in os.listdir(output_dir) if f.startswith(
-        'result_') and f.endswith('.csv') and f != exclude_filename]
+    files_to_remove = [
+        f for f in os.listdir(output_dir)
+        if f.startswith('result_')
+        and f.endswith('.csv')
+        and f != exclude_filename
+        and not f.endswith('_case_2.csv')  # Add this condition
+    ]
 
     # Loop through the files and remove them
     for file in files_to_remove:
@@ -76,6 +80,7 @@ def remove_small_stitched_files(output_dir: str, exclude_filename: str):
         os.remove(file_path)
 
     print("Small stitched files removal complete.")
+
 
 
 def delete_fasta_files(directory: str):
