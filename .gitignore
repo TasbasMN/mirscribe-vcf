@@ -12,3 +12,6 @@ data/**/*.fa
 
 # vscode config
 .vscode
+
+# todo
+todo.md
