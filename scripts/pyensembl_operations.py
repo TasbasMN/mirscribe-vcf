@@ -1,11 +1,12 @@
 from scripts.globals import PYENSEMBL_CACHE_DIR
 from functools import lru_cache
+import numpy as np
 
 def import_pyensembl(grch):
     if grch not in [37, 38]:
         raise ValueError("grch must be either 37 or 38")
 
-    ens_release = 75 if grch == 37 else 109
+    ens_release = 75 if grch == 37 else 111
     
     import os
 
@@ -39,7 +40,7 @@ def cached_pyensembl_call(locus, assembly, canonical_only, function_name):
 
     Returns:
         str: The result of the function call, formatted as a string.
-            If the result is an empty list, returns 'NA'.
+            If the result is an empty list, returns np.nan.
             If canonical_only is True, returns the first element of the result list.
             If canonical_only is False, returns a comma-separated string of all elements in the result list.
 
@@ -57,7 +58,7 @@ def cached_pyensembl_call(locus, assembly, canonical_only, function_name):
     result = func(chrom, int(pos))
     
     if len(result) == 0:
-        return 'NA'
+        return np.nan
     elif canonical_only:
         return result[0]
     else:
@@ -128,3 +129,5 @@ def get_gene_biotypes(df, assembly):
     df['biotype'] = df['gene_id'].map(biotype_dict)
     
     return df
+
+

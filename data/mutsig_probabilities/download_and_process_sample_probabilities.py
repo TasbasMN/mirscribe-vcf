@@ -44,15 +44,19 @@ def check_download_sample_probability_files():
         print(f'{sample_probability_files_path} is not an absolute path.')
 
 def main():
-    # check_download_sample_probability_files()
+    check_download_sample_probability_files()
     
     df = pd.read_csv('sample_probabilities/COSMIC_SBS96_Decomposed_Mutation_Probabilities.txt', sep='\t')
-    mutsig = df.iloc[:, 2:].idxmax(axis=1)
+    df['mutsig'] = pd.Series(dtype=object)  # Initialize with object data type
 
-    # Append the mutsig column to the DataFrame
-    df['mutsig'] = mutsig
     
-    df = df.iloc[:, [0, 1, -1]]
+    # Assign mutsig values based on maximum probabilities
+    max_values = df.iloc[:, 2:].max(axis=1)
+    mask = max_values > 0.5
+    
+    df.loc[mask, 'mutsig'] = df.iloc[:, 2:].idxmax(axis=1)[mask]
+
+    df.iloc[:, [0, 1, -1]]
     
     df.to_csv("sample_probabilities.csv", index=False)
 
