@@ -15,3 +15,6 @@ data/**/*.fa
 
 # todo
 todo.md
+
+# db
+data/db/mirscribe.db
