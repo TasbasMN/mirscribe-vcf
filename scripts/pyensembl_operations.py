@@ -66,18 +66,6 @@ def cached_pyensembl_call(locus, assembly, canonical_only, function_name):
 
 
 
-def get_gene_ids(df, assembly, canonical_only=True):
-    
-    unique_loci = df['locus'].unique()
-  
-    gene_id_dict = {
-        locus: cached_pyensembl_call(locus, assembly, canonical_only, 'gene_ids_at_locus')
-        for locus in unique_loci
-    }
-    
-    df['gene_id'] = df['locus'].map(gene_id_dict)
-
-    return df
 
 def get_gene_names(df, assembly, canonical_only=True):
     

@@ -2,6 +2,8 @@ import pandas as pd
 from scripts.utils.sequence_utils import get_nucleotide_at_position
 from scripts.pyensembl_operations import *
 from scripts.globals import *
+import os
+import sqlite3
 
 
 def filter_rows_by_thresholds(df, mut_threshold, wt_threshold):
@@ -15,7 +17,7 @@ def split_id_column(df):
     return df
 
 
-def generate_mutation_context_column(row):
+def create_mutation_context_string(row):
     try:
         ref = row['ref']
         alt = row['alt']
@@ -43,12 +45,12 @@ def generate_mutation_context_column(row):
         return ''
 
 
-def add_mutation_context_columns(df):
+def generate_mutation_context_column(df):
     df["before"] = df.apply(
         lambda x: get_nucleotide_at_position(x['chr'], x["pos"]-1), axis=1)
     df["after"] = df.apply(lambda x: get_nucleotide_at_position(
         x['chr'], x["pos"]+1), axis=1)
-    df['mutation_context'] = df.apply(generate_mutation_context_column, axis=1)
+    df['mutation_context'] = df.apply(create_mutation_context_string, axis=1)
     df["mutsig_key"] = df["vcf_id"] + "_" + df["mutation_context"]
     df.drop(columns=["before", "after", "ref", "alt"], inplace=True)
     return df
@@ -62,33 +64,6 @@ def add_mutsig_probabilities(df, mutsig_file):
     df["mutsig"] = df["mutsig_key"].map(mutsig_dict)
     return df
 
-
-def add_ensembl_data(df, ensembl_release):
-    df['locus'] = df['chr'].astype(str) + ':' + df['pos'].astype(str)
-    df = get_gene_ids(df, ensembl_release)
-    df = get_gene_names(df, ensembl_release)
-    df = get_transcript_ids(df, ensembl_release, canonical_only=True)
-    df = get_gene_biotypes(df, ensembl_release)
-    df.drop(columns=["chr", "pos", "locus"], inplace=True)
-    return df
-
-
-def merge_with_mirna_data(df):
-    mirna_df = pd.read_csv(MIRNA_CSV, usecols=[
-                           "mirna_accession", "mirna_name", "mirna_family"])
-    df = df.merge(mirna_df, on="mirna_accession", how="left")
-    return df
-
-
-def apply_step_5(res_file, mut_threshold, wt_threshold, mutsig_file, ensembl_release):
-    df = pd.read_csv(res_file)
-    df = filter_rows_by_thresholds(df, mut_threshold, wt_threshold)
-    df = split_id_column(df)
-    df = add_mutation_context_columns(df)
-    df = add_mutsig_probabilities(df, mutsig_file)
-    df = add_ensembl_data(df, ensembl_release)
-    df = merge_with_mirna_data(df)
-    return df
 
 
 def generate_is_intron_column(df, assembly):
@@ -112,3 +87,87 @@ def generate_is_intron_column(df, assembly):
     df.drop(columns=["is_exon"], inplace=True)
 
     return df
+
+
+
+###################################################
+
+
+def generate_gene_id_column(df, assembly):
+    unique_loci = df['locus'].unique()
+    
+    @lru_cache(maxsize=None)
+    def cached_pyensembl_call(locus):
+
+        chrom, pos = locus.split(':')
+        result = assembly.gene_ids_at_locus(chrom, int(pos))
+
+        return np.nan if len(result) == 0 else result[0]
+
+    gene_id_dict = {locus: cached_pyensembl_call(locus) for locus in unique_loci}
+    df['gene_id'] = df['locus'].map(gene_id_dict)
+
+    return df
+
+
+
+def apply_step_5(file_path, assembly, MUTSIG_PROBABILITIES):
+    df = pd.read_csv(file_path)
+
+    df = split_id_column(df)
+    df["locus"] = df["chr"] + ":" + df["pos"].astype(str)
+    
+    df = generate_gene_id_column(df, assembly)
+    df = generate_mutation_context_column(df)
+    df = add_mutsig_probabilities(df, MUTSIG_PROBABILITIES)
+    df = generate_is_intron_column(df, assembly)
+    
+    df.drop(columns=["chr", "pos", "locus", "mutsig_key"], inplace=True)
+
+    return df
+
+def crawl_and_import_results(folder_path, ending_string, db_path, table_name, assembly):
+    csv_files = []
+
+    # Find CSV files
+    for root, _, files in os.walk(folder_path):
+        csv_files.extend(
+            os.path.join(root, file)
+            for file in files
+            if file.endswith(f"{ending_string}.csv")
+        )
+
+    # Connect to SQLite database
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Create table if it doesn't exist
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id TEXT PRIMARY KEY,
+            wt_prediction REAL,
+            mut_prediction REAL,
+            pred_difference REAL,
+            vcf_id TEXT,
+            mirna_accession TEXT,
+            gene_id TEXT,
+            mutation_context TEXT,
+            mutsig TEXT,
+            is_intron BOOLEAN
+        )
+    """)
+
+    # Import CSV files into the table
+    for file_path in csv_files:
+        df = apply_step_5(file_path, assembly, MUTSIG_PROBABILITIES)
+
+        columns = ', '.join(df.columns)
+        placeholders = ', '.join(['?'] * len(df.columns))
+
+        # Insert data into the table
+        for row in df.values:
+            cursor.execute(f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})", row)
+
+    # Commit changes and close the connection
+    conn.commit()
+    conn.close()
