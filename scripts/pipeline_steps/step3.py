@@ -1,12 +1,3 @@
-
-# df = process_rnaduplex_output(rnaduplex_output_file)
-
-# # Step 3: Prediction
-# df = process_df_for_prediction(df)
-# df, id_array = reorder_columns_for_prediction(df)
-# predictions = make_predictions_with_xgb(df)
-# df = create_results_df(id_array, predictions, filter_range=QUANTILE_RANGE)
-
 import numpy as np
 import pandas as pd
 from scripts.globals import *

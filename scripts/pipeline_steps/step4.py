@@ -1,6 +1,7 @@
 import xgboost as xgb
 import pandas as pd
-from scripts.globals import *
+from scripts.globals import XGB_MODEL
+from scripts.config import FILTER_THRESHOLD
 
 
 def reorder_columns_for_prediction(df):
@@ -46,7 +47,7 @@ def make_predictions_with_xgb(df):
     return model.predict(data_matrix)
 
 
-def create_results_df(id_array, predictions, filter_range=QUANTILE_RANGE):
+def create_results_df(id_array, predictions, filter_range=FILTER_THRESHOLD):
     df = pd.DataFrame({'id': id_array, 'prediction': predictions})
     df[['id', 'is_mutated']] = df['id'].str.rsplit('_', n=1, expand=True)
     df["is_mutated"] = df["is_mutated"].eq("mut")

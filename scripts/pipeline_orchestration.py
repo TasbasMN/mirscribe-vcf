@@ -8,7 +8,7 @@ from scripts.pipeline_steps.step2 import *
 from scripts.pipeline_steps.step3 import *
 from scripts.pipeline_steps.step4 import *
 
-from scripts.config import SKIP_RNADUPLEX
+from scripts.config import SKIP_RNADUPLEX, FILTER_THRESHOLD
 
 def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output_dir: str, vcf_id: str, verbose: bool = False,) -> pd.DataFrame:
 
@@ -67,7 +67,7 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
         df, id_array = reorder_columns_for_prediction(df)
         predictions = make_predictions_with_xgb(df)
         df = create_results_df(id_array, predictions,
-                               filter_range=QUANTILE_RANGE)
+                               filter_range=FILTER_THRESHOLD)
 
     return df
 
