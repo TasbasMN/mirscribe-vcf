@@ -19,3 +19,6 @@ todo.md
 # db
 data/db/mirscribe.db
 data/predictions.parquet
+
+# scratchpad
+scratchpad.ipynb

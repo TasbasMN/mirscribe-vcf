@@ -4,10 +4,7 @@ from scripts.pyensembl_operations import *
 from scripts.globals import *
 import os
 import sqlite3
-
-
-def filter_rows_by_thresholds(df, mut_threshold, wt_threshold):
-    return df[(df["mut_prediction"] > mut_threshold) != (df["wt_prediction"] > wt_threshold)]
+from scripts.globals import MUTSIG_PROBABILITIES
 
 
 def split_id_column(df):
@@ -110,17 +107,46 @@ def generate_gene_id_column(df, assembly):
     return df
 
 
+def filter_rows_with_same_prediction(df, threshold=0.5):
+    """
+    Filter rows from a DataFrame based on the difference between the wt and mut predictions.
 
-def apply_step_5(file_path, assembly, MUTSIG_PROBABILITIES):
+    Args:
+        df (pandas.DataFrame): The input DataFrame.
+        threshold (float, optional): The threshold to determine if the difference is significant. Default is 0.5.
+
+    Returns:
+        pandas.DataFrame: The filtered DataFrame.
+    """
+    # Create a mask based on the difference between wt and mut predictions.
+    # The mask is True if the difference is significant (i.e., the predictions are different), and False otherwise.
+    mask = (df['wt_prediction'] >= threshold) != (df['mut_prediction'] >= threshold)
+    
+    # Filter the DataFrame based on the mask and reset the index.
+    df = df[mask]
+    
+    # Reset the index and return the filtered DataFrame.
+    return df.reset_index(drop=True)
+
+    
+
+
+def apply_step_5(file_path, assembly, mutsig_probabilities):
+    
     df = pd.read_csv(file_path)
-
+    df = filter_rows_with_same_prediction(df)
+    
     df = split_id_column(df)
     df["locus"] = df["chr"] + ":" + df["pos"].astype(str)
     
     df = generate_gene_id_column(df, assembly)
     df = generate_mutation_context_column(df)
-    df = add_mutsig_probabilities(df, MUTSIG_PROBABILITIES)
+    df = add_mutsig_probabilities(df, mutsig_probabilities)
     df = generate_is_intron_column(df, assembly)
+    
+    df["is_gain"] = df.mut_prediction > df.wt_prediction
+    df["is_gene_upregulated"] = ~df.is_gain
+
     
     df.drop(columns=["chr", "pos", "locus", "mutsig_key"], inplace=True)
 
@@ -153,12 +179,15 @@ def crawl_and_import_results(folder_path, ending_string, db_path, table_name, as
             gene_id TEXT,
             mutation_context TEXT,
             mutsig TEXT,
-            is_intron BOOLEAN
+            is_intron BOOLEAN,
+            is_gain BOOLEAN,
+            is_gene_upregulated BOOLEAN
         )
     """)
 
     # Import CSV files into the table
     for file_path in csv_files:
+        
         df = apply_step_5(file_path, assembly, MUTSIG_PROBABILITIES)
 
         columns = ', '.join(df.columns)

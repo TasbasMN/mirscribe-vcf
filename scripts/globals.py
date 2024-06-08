@@ -26,13 +26,10 @@ MIRNA_COORDS_DIR = "data/mirna_coordinates"
 TA_SPS_CSV = "data/ta_sps/ta_sps.csv"
 MIRNA_CSV = "data/mirna/mirna.csv"
 XGB_MODEL = "misc/models/model_with_no_close_proximity.json"
+
 NUCLEOTIDE_OFFSET = 30
 
+
 AWK_SCRIPT_PATH = "scripts/rnaduplex_to_csv.awk"
-
-QUANTILE_RANGE = 0.25
-
-WT_THRESHOLD = 0.5
-MUT_THRESHOLD = 0.5
 MUTSIG_PROBABILITIES = "data/mutsig_probabilities/probabilities.csv"
 
