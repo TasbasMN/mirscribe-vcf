@@ -22,3 +22,5 @@ data/predictions.parquet
 
 # scratchpad
 scratchpad.ipynb
+data/real.parquet
+data/synth.parquet
