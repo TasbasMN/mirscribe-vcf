@@ -24,3 +24,4 @@ data/predictions.parquet
 scratchpad.ipynb
 data/real.parquet
 data/synth.parquet
+data/db/genes.csv
