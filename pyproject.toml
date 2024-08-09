@@ -39,6 +39,7 @@ nbconvert = "^7.16.4"
 pillow = "^10.4.0"
 fonttools = "^4.53.1"
 rise = "^5.7.1"
+memory-profiler = "^0.61.0"
 
 [build-system]
 requires = ["poetry-core"]
