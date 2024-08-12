@@ -1,6 +1,7 @@
 import argparse
 import os
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Process a VCF file in chunks using concurrent futures.')
@@ -16,10 +17,11 @@ def parse_arguments():
                         type=int, help='Number of concurrent workers')
     parser.add_argument('--skip-rnaduplex', action='store_true',
                         help='Skip RNAduplex analysis')
-    parser.add_argument('-t', '--threshold', default=0.2, type=float, 
+    parser.add_argument('-t', '--threshold', default=0.2, type=float,
                         help='Threshold for filtering out pairs that have less prediction difference than the threshold')
-                        
-                        
+    parser.add_argument('--profile', action='store_true',
+                        help='Enable memory profiling')
+
     return parser.parse_args()
 
 
@@ -31,6 +33,7 @@ VERBOSE = args.verbose
 WORKERS = args.workers
 SKIP_RNADUPLEX = args.skip_rnaduplex
 FILTER_THRESHOLD = args.threshold
+PROFILER = args.profile
 
 
 VCF_ID = os.path.basename(VCF_FULL_PATH).split(".")[0]

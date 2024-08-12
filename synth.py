@@ -4,7 +4,6 @@ from scripts.config import *
 import time
 from memory_profiler import profile
 
-@profile
 def main():
 
     # Create the output directory if it doesn't exist
@@ -29,4 +28,10 @@ def main():
     print(f"Total runtime: {end - start:.2f} seconds")
     
 if __name__ == '__main__':
-    main()
+    if PROFILER:
+        profile(main)()
+    else:
+        main()
+
+
+
