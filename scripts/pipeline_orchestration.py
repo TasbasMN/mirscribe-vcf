@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-
+import gc
 from scripts.utils.misc_utils import time_it
 
 from scripts.pipeline_steps.step1 import *
@@ -32,7 +32,17 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
         # Step 2: Data Processing
         case_1 = classify_and_get_case_1_mutations(
             df, vcf_id, start_index, end_index, output_dir)
+        
+        # gc
+        del df
+        gc.collect()
+        
         prepare_job_fastas_sharded(case_1, fasta_output_file)
+        
+        # gc
+        del case_1
+        gc.collect()
+        
         run_rnaduplex_and_awk_sharded(fasta_output_file, rnaduplex_output_file)
 
         # Step 3: Prediction Preprocessing
@@ -66,6 +76,11 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
         # Step 4: Prediction
         df, id_array = reorder_columns_for_prediction(df)
         predictions = make_predictions_with_xgb(df)
+        
+        # gc
+        del df
+        gc.collect()
+        
         df = create_results_df(id_array, predictions,
                                filter_range=FILTER_THRESHOLD)
 
