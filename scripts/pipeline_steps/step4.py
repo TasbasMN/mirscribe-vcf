@@ -7,6 +7,7 @@ from scripts.config import FILTER_THRESHOLD
 def reorder_columns_for_prediction(df):
 
     id_array = df.pop("id")
+    binary_array = df.pop("is_mutation_in_mre")
 
     column_order = ['pred_energy',
                     'pred_num_basepairs',
@@ -36,7 +37,7 @@ def reorder_columns_for_prediction(df):
 
     df = df.reindex(columns=column_order)
 
-    return df, id_array
+    return df, id_array, binary_array
 
 
 def make_predictions_with_xgb(df):
@@ -47,17 +48,25 @@ def make_predictions_with_xgb(df):
     return model.predict(data_matrix)
 
 
-def create_results_df(id_array, predictions, filter_range=FILTER_THRESHOLD):
-    df = pd.DataFrame({'id': id_array, 'prediction': predictions})
+def create_results_df(id_array, predictions, binary_array, filter_range=FILTER_THRESHOLD):
+
+    df = pd.DataFrame({'id': id_array, 'prediction': predictions, "binary_array": binary_array})
     df[['id', 'is_mutated']] = df['id'].str.rsplit('_', n=1, expand=True)
-    df["is_mutated"] = df["is_mutated"].eq("mut")
+
+    mask1 = df.groupby("id").binary_array.sum().astype(bool)
 
     pivot_df = df.pivot(index='id', columns='is_mutated',
                         values='prediction').reset_index()
+
     pivot_df.columns = ['id', 'wt_prediction', 'mut_prediction']
     pivot_df["pred_difference"] = (
         pivot_df["mut_prediction"] - pivot_df["wt_prediction"]).round(3)
 
+    pivot_df = pivot_df.merge(mask1, on="id")
+
+    # filter out predictions where mutation is not in MRE in either wt or mutated
+    pivot_df = pivot_df[pivot_df["binary_array"] == True]
+
     # filter out predictions that are outside of the quantile range
-    mask = (pivot_df["pred_difference"].abs() >= filter_range)
-    return pivot_df[mask]
+    mask2 = (pivot_df["pred_difference"].abs() >= filter_range)
+    return pivot_df[mask2]

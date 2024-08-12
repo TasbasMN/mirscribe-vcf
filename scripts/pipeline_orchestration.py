@@ -57,32 +57,45 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
         column_names = ["chr", "pos", "ref", "alt", "upstream_seq",
                         "downstream_seq", "wt_seq", "mut_seq", "is_mutated"]
         df.drop(columns=column_names, inplace=True)
+        
+        
         df = generate_mre_sequence_column(df)
+        
+        # add a mask that checks if the mutation is in the MRE region
+        mask_if_mutation_in_mre = (df.mrna_start < 32) & (df.mrna_end > 30)
+        df["is_mutation_in_mre"] = mask_if_mutation_in_mre
         df.drop(columns=["mrna_start", "mrna_end",
                 "mre_start", "mre_end"], inplace=True)
+        
         df = generate_local_au_content_column(df)
         df.drop("mrna_sequence", axis=1, inplace=True)
+        
         df = generate_ta_sps_columns(df)
         df = generate_alignment_string_from_dot_bracket(df)
         df.drop(columns=["mirna_start", "mirna_end",
                 "mirna_sequence"], inplace=True)
+        
         df = generate_match_count_columns(df)
         df = generate_important_sites_column(df)
         df = generate_seed_type_columns(df)
         df.drop("alignment_string", axis=1, inplace=True)
+        
         df = generate_mre_au_content_column(df)
         df.drop("mre_region", axis=1, inplace=True)
 
         # Step 4: Prediction
-        df, id_array = reorder_columns_for_prediction(df)
+        df, id_array, binary_array = reorder_columns_for_prediction(df)
+
         predictions = make_predictions_with_xgb(df)
         
         # gc
         del df
         gc.collect()
         
-        df = create_results_df(id_array, predictions,
+        df = create_results_df(id_array, predictions, binary_array,
                                filter_range=FILTER_THRESHOLD)
+        
+        df.drop(columns=["binary_array"], inplace=True)
 
     return df
 
