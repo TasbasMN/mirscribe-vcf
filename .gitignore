@@ -25,3 +25,4 @@ scratchpad.ipynb
 data/real.parquet
 data/synth.parquet
 data/db/genes.csv
+data/synth2.parquet

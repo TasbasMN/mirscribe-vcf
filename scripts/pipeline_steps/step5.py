@@ -200,3 +200,26 @@ def crawl_and_import_results(folder_path, ending_string, db_path, table_name, as
     # Commit changes and close the connection
     conn.commit()
     conn.close()
+
+
+
+def crawl_and_import_results_into_df(folder_path, ending_string, assembly):
+    csv_files = []
+
+    # Find CSV files
+    for root, _, files in os.walk(folder_path):
+        csv_files.extend(
+            os.path.join(root, file)
+            for file in files
+            if file.endswith(f"{ending_string}.csv")
+        )
+
+    # Create a list to store DataFrames
+    dataframes = []
+
+    # Process each CSV file
+    for file_path in csv_files:
+        df = apply_step_5(file_path, assembly, MUTSIG_PROBABILITIES)
+        dataframes.append(df)
+
+    return pd.concat(dataframes, ignore_index=True)
