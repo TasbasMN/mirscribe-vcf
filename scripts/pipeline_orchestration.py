@@ -8,8 +8,9 @@ from scripts.pipeline_steps.step2 import *
 from scripts.pipeline_steps.step3 import *
 from scripts.pipeline_steps.step4 import *
 
-from scripts.config import SKIP_RNADUPLEX, FILTER_THRESHOLD
+from scripts.config import SKIP_RNADUPLEX, FILTER_THRESHOLD, PROFILER
 
+@time_it(enabled=PROFILER)
 def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output_dir: str, vcf_id: str, verbose: bool = False,) -> pd.DataFrame:
 
     rnaduplex_output_file = os.path.join(
@@ -100,7 +101,7 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
     return df
 
 
-@time_it
+# @time_it(enabled=PROFILER)
 def process_chunk(chunk: pd.DataFrame, start_index: int, end_index: int, output_dir: str, vcf_id: str) -> tuple:
 
     result = analysis_pipeline(

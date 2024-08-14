@@ -8,10 +8,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from scripts.pipeline_orchestration import *
 from scripts.utils.misc_utils import time_it
 
-from scripts.config import WORKERS
+from scripts.config import WORKERS, PROFILER
 
 
-@time_it
+@time_it(enabled=PROFILER)
 def run_pipeline(vcf_full_path: str, chunksize: int, output_dir: str, vcf_id: str):
     with ThreadPoolExecutor(max_workers=WORKERS) as executor:
 
