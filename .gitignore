@@ -27,3 +27,8 @@ data/synth.parquet
 data/db/genes.csv
 data/synth2.parquet
 data/sample_vcfs/sample2.vcf
+
+
+data/synth/
+data/goa/
+data/merged_5_experiments.csv
