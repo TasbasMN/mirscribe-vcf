@@ -137,18 +137,21 @@ def apply_step_5(file_path, assembly, mutsig_probabilities):
     df = filter_rows_with_same_prediction(df)
     
     df = split_id_column(df)
-    df["locus"] = df["chr"] + ":" + df["pos"].astype(str)
     
+    # column needed in pyensembl operations
+    df["locus"] = df["chr"] + ":" + df["pos"].astype(str)
     df = generate_gene_id_column(df, assembly)
+    df = generate_is_intron_column(df, assembly)
+    df.drop(columns=["chr", "pos", "locus"], inplace=True)
+    
+    # remove last character of vcf_id col if it is "+" to get the mutsigs
     df = generate_mutation_context_column(df)
     df = add_mutsig_probabilities(df, mutsig_probabilities)
-    df = generate_is_intron_column(df, assembly)
+    df.drop(columns=["mutsig_key"], inplace=True)
     
-    df["is_gain"] = df.mut_prediction > df.wt_prediction
-    df["is_gene_upregulated"] = ~df.is_gain
-
-    
-    df.drop(columns=["chr", "pos", "locus", "mutsig_key"], inplace=True)
+    # deprecated for now
+    # df["is_gain"] = df.mut_prediction > df.wt_prediction
+    df["is_gene_upregulated"] = df.wt_prediction > df.mut_prediction
 
     return df
 
