@@ -7,59 +7,53 @@ import sqlite3
 from scripts.globals import MUTSIG_PROBABILITIES
 
 
+def filter_rows_with_same_prediction(df, threshold=0.5):
+    mask = (df['wt_prediction'] >= threshold) != (df['mut_prediction'] >= threshold)
+    return df[mask].reset_index(drop=True)
+
+
+
 def split_id_column(df):
-    df[['vcf_id', 'chr', 'pos', 'ref', 'alt', 'mirna_accession']
-       ] = df['id'].str.split('_', expand=True)
-    df.pos = df.pos.astype(int)
+    df[['vcf_id', 'chr', 'pos', 'ref', 'alt', 'mirna_accession']] = df['id'].str.split('_', expand=True)
+    df['pos'] = pd.to_numeric(df['pos'], downcast='integer')
     return df
 
 
-def create_mutation_context_string(row):
-    try:
-        ref = row['ref']
-        alt = row['alt']
-        before = row['before']
-        after = row['after']
 
-        if ref in ['C', 'T']:  # Pyrimidine
-            return f"{before}[{ref}>{alt}]{after}"
-        elif ref in ['A', 'G']:  # Purine
-            complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
-            ref_complement = complement[ref]
-            alt_complement = complement[alt]
-            before_complement = ''.join(
-                complement[base] for base in before[::-1])
-            after_complement = ''.join(
-                complement[base] for base in after[::-1])
-            return f"{after_complement}[{ref_complement}>{alt_complement}]{before_complement}"
-        else:
-            raise ValueError(f"Invalid reference nucleotide: {ref}")
-    except KeyError as e:
-        print(f"Error: Missing column - {str(e)}")
-        return ''
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return ''
+COMPLEMENT = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+
+def create_mutation_context_string(row):
+    ref, alt, before, after = row['ref'], row['alt'], row['before'], row['after']
+    if ref in 'CT':  # Pyrimidine
+        return f"{before}[{ref}>{alt}]{after}"
+    elif ref in 'AG':  # Purine
+        ref_complement = COMPLEMENT[ref]
+        alt_complement = COMPLEMENT[alt]
+        before_complement = ''.join(COMPLEMENT[base] for base in before[::-1])
+        after_complement = ''.join(COMPLEMENT[base] for base in after[::-1])
+        return f"{after_complement}[{ref_complement}>{alt_complement}]{before_complement}"
+    else:
+        raise ValueError(f"Invalid reference nucleotide: {ref}")
+
 
 
 def generate_mutation_context_column(df):
-    df["before"] = df.apply(
-        lambda x: get_nucleotide_at_position(x['chr'], x["pos"]-1), axis=1)
-    df["after"] = df.apply(lambda x: get_nucleotide_at_position(
-        x['chr'], x["pos"]+1), axis=1)
+    df['before'] = df.apply(lambda x: get_nucleotide_at_position(x['chr'], x['pos']-1), axis=1)
+    df['after'] = df.apply(lambda x: get_nucleotide_at_position(x['chr'], x['pos']+1), axis=1)
     df['mutation_context'] = df.apply(create_mutation_context_string, axis=1)
-    df["mutsig_key"] = df["vcf_id"] + "_" + df["mutation_context"]
-    df.drop(columns=["before", "after", "ref", "alt"], inplace=True)
+    df['mutsig_key'] = df['vcf_id'].astype(str) + '_' + df['mutation_context']
+    df.drop(columns=['before', 'after', 'ref', 'alt'], inplace=True)
     return df
+
 
 
 def add_mutsig_probabilities(df, mutsig_file):
     mutsig_df = pd.read_csv(mutsig_file)
-    mutsig_df["mutsig_key"] = mutsig_df["Sample Names"] + \
-        "_" + mutsig_df["MutationTypes"]
-    mutsig_dict = mutsig_df.set_index('mutsig_key')['mutsig'].to_dict()
-    df["mutsig"] = df["mutsig_key"].map(mutsig_dict)
+    mutsig_df['mutsig_key'] = mutsig_df['Sample Names'] + '_' + mutsig_df['MutationTypes']
+    mutsig_dict = dict(zip(mutsig_df['mutsig_key'], mutsig_df['mutsig']))
+    df['mutsig'] = df['mutsig_key'].map(mutsig_dict)
     return df
+
 
 
 
@@ -107,51 +101,51 @@ def generate_gene_id_column(df, assembly):
     return df
 
 
-def filter_rows_with_same_prediction(df, threshold=0.5):
-    """
-    Filter rows from a DataFrame based on the difference between the wt and mut predictions.
-
-    Args:
-        df (pandas.DataFrame): The input DataFrame.
-        threshold (float, optional): The threshold to determine if the difference is significant. Default is 0.5.
-
-    Returns:
-        pandas.DataFrame: The filtered DataFrame.
-    """
-    # Create a mask based on the difference between wt and mut predictions.
-    # The mask is True if the difference is significant (i.e., the predictions are different), and False otherwise.
-    mask = (df['wt_prediction'] >= threshold) != (df['mut_prediction'] >= threshold)
-    
-    # Filter the DataFrame based on the mask and reset the index.
-    df = df[mask]
-    
-    # Reset the index and return the filtered DataFrame.
-    return df.reset_index(drop=True)
-
-    
-
-
 def apply_step_5(file_path, assembly, mutsig_probabilities):
     
     df = pd.read_csv(file_path)
+    
+    # dtype optimization
+    pred_columns = ['wt_prediction', 'mut_prediction']
+    for col in pred_columns:
+        df[col] = df[col].astype(np.float32)
+    
     df = filter_rows_with_same_prediction(df)
     
     df = split_id_column(df)
     
+    cat_columns = ['vcf_id','chr', 'pos', 'ref', 'alt', 'mirna_accession']
+    for col in cat_columns:
+        df[col] = df[col].astype('category')
+    
     # column needed in pyensembl operations
-    df["locus"] = df["chr"] + ":" + df["pos"].astype(str)
+    df["locus"] = df["chr"].astype(str) + ":" + df["pos"].astype(str)
     df = generate_gene_id_column(df, assembly)
+    df['gene_id'] = df['gene_id'].astype('category')
     df = generate_is_intron_column(df, assembly)
-    df.drop(columns=["chr", "pos", "locus"], inplace=True)
+    df.drop(columns=["locus"], inplace=True)
     
     # remove last character of vcf_id col if it is "+" to get the mutsigs
     df = generate_mutation_context_column(df)
+    df.drop(columns=["chr", "pos"], inplace=True)
+    
+    df["mutation_context"] = df["mutation_context"].astype('category')
+    
+    
     df = add_mutsig_probabilities(df, mutsig_probabilities)
+    df["mutsig"] = df["mutsig"].astype('category')
     df.drop(columns=["mutsig_key"], inplace=True)
     
     # deprecated for now
     # df["is_gain"] = df.mut_prediction > df.wt_prediction
-    df["is_gene_upregulated"] = df.wt_prediction > df.mut_prediction
+    df["is_gene_upregulated"] = (df.wt_prediction > df.mut_prediction).astype('bool')
+
+    # fill in columns that will produce nan
+    for col in ["gene_id", "mutsig"]:
+        existing_categories = df[col].cat.categories
+        new_categories = existing_categories.append(pd.Index(['not_found']))
+        df[col] = df[col].cat.set_categories(new_categories)
+        df[col] = df[col].fillna('not_found')
 
     return df
 
