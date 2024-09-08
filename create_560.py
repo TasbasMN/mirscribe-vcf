@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-df = pd.read_csv("560.txt", sep="\t")
+df = pd.read_csv("data/560.txt", sep="\t")
 cols_to_drop = ["Project", "ID", "Genome", "mut_type", "Type"]
 df = df.drop(columns=cols_to_drop)
 
