@@ -3,8 +3,12 @@ import pandas as pd
 from tqdm import tqdm
 
 df = pd.read_csv("data/560.txt", sep="\t")
-cols_to_drop = ["Project", "ID", "Genome", "mut_type", "Type"]
+cols_to_drop = ["Project", "ID", "Genome", "mut_type", "Type", "pos_end"]
 df = df.drop(columns=cols_to_drop)
+
+
+ # reorder columns
+df = df[["chrom", "chrom.1", "Sample", "ref", "alt"]]
 
 # setting vcfs to exclude
 target_folder = "data/sample_vcfs"
