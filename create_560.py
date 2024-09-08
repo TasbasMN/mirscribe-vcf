@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from tqdm import tqdm
 
 df = pd.read_csv("data/560.txt", sep="\t")
 cols_to_drop = ["Project", "ID", "Genome", "mut_type", "Type"]
@@ -12,7 +13,8 @@ vcfs_to_exclude = {os.path.basename(x).split(".")[0] for x in os.listdir(target_
 output_dir = "data/560"
 os.makedirs(output_dir, exist_ok=True)
 
-for name, group in df.groupby("Sample"):
+
+for name, group in tqdm(df.groupby("Sample"), total=len(df["Sample"].unique())):
     if name in vcfs_to_exclude:
         continue
     
