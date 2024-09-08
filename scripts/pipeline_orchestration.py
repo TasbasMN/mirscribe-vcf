@@ -22,6 +22,7 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
         fasta_output_file = os.path.join(
             output_dir, f"fasta_{vcf_id}_{start_index}_{end_index}.fa")
 
+        df['id'] = df['id'].astype(str)
         df['id'] += '_' + df['chr'].astype(str) + '_' + df['pos'].astype(
             str) + '_' + df['ref'] + '_' + df['alt']
 
