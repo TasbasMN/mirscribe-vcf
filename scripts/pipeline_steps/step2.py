@@ -1,8 +1,3 @@
-# # Step 2: Data Processing
-# case_1 = classify_and_get_case_1_mutations(df, vcf_id, start_index, end_index, output_dir)
-# prepare_job_fastas_sharded(case_1, fasta_output_file)
-# run_rnaduplex_and_awk_sharded(fasta_output_file, rnaduplex_output_file)
-
 import logging
 import os
 import pandas as pd
@@ -29,17 +24,16 @@ def classify_and_get_case_1_mutations(df, vcf_id, start, end, output_dir):
     # Classify case 1 and case 2 mutations
     case_1 = df[df.is_mirna == 0][["id", "wt_seq", "mut_seq"]]
     case_2 = df[df.is_mirna == 1][["id", "wt_seq", "mut_seq"]]
+    
+    
 
-    # Save case 2 mutations to disk if any exist
-    case_2_file = os.path.join(
-        output_dir, f"{vcf_id}_{start}_{end}_case_2.csv")
+
     if not case_2.empty:
+        # Save case 2 mutations to disk if any exist
+        case_2_file = os.path.join(output_dir, f"{vcf_id}_{start}_{end}_case_2.csv")
         case_2.to_csv(case_2_file, index=False)
-        logging.info(f"Saved {len(case_2)} case 2 mutations to {case_2_file}")
-    else:
-        logging.info(f"No case 2 mutations were found for {vcf_id}")
-
-    logging.info(f"Found {len(case_1)} case 1 mutations.")
+        print(f"case 2 mutations: {len(case_2)}")
+        
 
     return case_1
 

@@ -1,6 +1,8 @@
 import psutil
 import os
 import zipfile
+import csv
+from typing import List
 import pandas as pd
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -61,7 +63,6 @@ def stitch_csv_files(output_dir: str, final_output_filename: str):
                 for line in read_file:
                     final_file.write(line)
 
-    print(f"All CSV files have been stitched into {final_output_path}")
 
 
 def remove_small_stitched_files(output_dir: str, exclude_filename: str):
@@ -92,8 +93,6 @@ def delete_fasta_files(directory: str):
     for file in fasta_files:
         file_path = os.path.join(directory, file)
         os.remove(file_path)
-
-    print("All FASTA files have been deleted.")
 
 
 def zip_files(folder_path, prefix, extension):
@@ -157,3 +156,49 @@ def print_memory_usage(verbose=False):
         # Log the memory usage information
         logging.info(
             f"Used Memory: {used_memory / 1024 / 1024:.2f} MB, memory percentage: {memory_percentage:.2f}%")
+
+
+def stitch_and_cleanup_csv_files(output_dir: str, final_output_filename: str) -> None:
+    """
+    Stitch multiple result CSV files into one and remove the original files.
+    
+    Args:
+        output_dir (str): Directory containing the CSV files.
+        final_output_filename (str): Name of the final stitched file.
+    """
+    try:
+        # Get and filter CSV files
+        csv_files = [f for f in os.listdir(output_dir) 
+                     if f.endswith('.csv') and f.startswith('result_')]
+        csv_files.sort()  # Ensure consistent ordering
+        
+        if not csv_files:
+            print("No matching CSV files found.")
+            return
+
+        final_output_path = os.path.join(output_dir, final_output_filename)
+        removed_files: List[str] = []
+
+        with open(final_output_path, 'w', newline='') as outfile:
+            writer = csv.writer(outfile)
+            header_written = False
+
+            for filename in csv_files:
+                file_path = os.path.join(output_dir, filename)
+                with open(file_path, 'r', newline='') as infile:
+                    reader = csv.reader(infile)
+                    if not header_written:
+                        header = next(reader)
+                        writer.writerow(header)
+                        header_written = True
+                    else:
+                        next(reader)  # Skip header in subsequent files
+                    writer.writerows(reader)
+
+                # # Remove original file if it's not the final output and not a case 2 file
+                # if filename != final_output_filename and not filename.endswith('_case_2.csv'):
+                #     os.remove(file_path)
+                #     removed_files.append(filename)
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
