@@ -13,9 +13,10 @@ def main():
     print("run_pipeline         ✓")
 
     results_filename = f"results_{VCF_ID}.csv"
-    print("stitch_csv_files     ✓")
     
     stitch_and_cleanup_csv_files(OUTPUT_DIR, results_filename)
+    print("stitch_and_cleanup   ✓")
+    
     delete_fasta_files(OUTPUT_DIR)
     print("delete_fasta_files   ✓")
 

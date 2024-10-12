@@ -102,7 +102,6 @@ def analysis_pipeline(df: pd.DataFrame, start_index: int, end_index: int, output
     return df
 
 
-# @time_it(enabled=PROFILER)
 def process_chunk(chunk: pd.DataFrame, start_index: int, end_index: int, output_dir: str, vcf_id: str) -> tuple:
 
     result = analysis_pipeline(

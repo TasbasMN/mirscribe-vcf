@@ -30,58 +30,6 @@ def run_pipeline(vcf_full_path: str, chunksize: int, output_dir: str, vcf_id: st
             start_index, end_index = future.result()
 
 
-def stitch_csv_files(output_dir: str, final_output_filename: str):
-
-    # List all CSV files in the output directory that match the pattern
-    csv_files = [f for f in os.listdir(
-        output_dir) if f.endswith('.csv') and 'result_' in f]
-
-    # Sort the files to maintain the order, if necessary
-    csv_files.sort()
-
-    # Define the path for the final output file
-    final_output_path = os.path.join(output_dir, final_output_filename)
-
-    # Open the final output file in write mode
-    with open(final_output_path, 'w') as final_file:
-        # Initialize a variable to track whether the header has been written
-        header_written = False
-
-        # Loop through the sorted CSV files
-        for file in csv_files:
-            file_path = os.path.join(output_dir, file)
-
-            # Open the current CSV file in read mode
-            with open(file_path, 'r') as read_file:
-                # Read the header from the first file and write it to the final file
-                header = read_file.readline()
-                if not header_written:
-                    final_file.write(header)
-                    header_written = True
-
-                # Stream the rest of the file's contents to the final file
-                for line in read_file:
-                    final_file.write(line)
-
-
-
-def remove_small_stitched_files(output_dir: str, exclude_filename: str):
-    # List all files in the output directory that match the pattern and are not the final stitched file
-    files_to_remove = [
-        f for f in os.listdir(output_dir)
-        if f.startswith('result_')
-        and f.endswith('.csv')
-        and f != exclude_filename
-        and not f.endswith('_case_2.csv')  # Add this condition
-    ]
-
-    # Loop through the files and remove them
-    for file in files_to_remove:
-        file_path = os.path.join(output_dir, file)
-        os.remove(file_path)
-
-    print("Small stitched files removal complete.")
-
 
 
 def delete_fasta_files(directory: str):
@@ -194,11 +142,6 @@ def stitch_and_cleanup_csv_files(output_dir: str, final_output_filename: str) ->
                     else:
                         next(reader)  # Skip header in subsequent files
                     writer.writerows(reader)
-
-                # # Remove original file if it's not the final output and not a case 2 file
-                # if filename != final_output_filename and not filename.endswith('_case_2.csv'):
-                #     os.remove(file_path)
-                #     removed_files.append(filename)
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
