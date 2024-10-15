@@ -1,6 +1,4 @@
-import psutil
 import os
-import zipfile
 import csv
 from typing import List
 import pandas as pd
@@ -43,67 +41,36 @@ def delete_fasta_files(directory: str):
         os.remove(file_path)
 
 
-def zip_files(folder_path, prefix, extension):
+def delete_files(folder_path, prefix, extension):
+    """
+    Delete files in the specified folder that match both the given prefix and extension.
 
+    Args:
+    folder_path (str): Path to the folder containing files to delete.
+    prefix (str): The prefix that matching files should start with.
+    extension (str): The extension that matching files should end with.
+
+    Returns:
+    list: A list of filenames that were successfully deleted.
+    """
+    # Validate the folder path
     if not os.path.isdir(folder_path):
-        raise ValueError(
-            f"The folder path provided does not exist: {folder_path}")
+        raise ValueError(f"The folder path does not exist: {folder_path}")
 
-    zip_filename = f"{prefix}_awk_outputs.zip"
-    zip_filepath = os.path.join(folder_path, zip_filename)
-    zipped_files = []
+    deleted_files = []
 
-    with zipfile.ZipFile(zip_filepath, "w", compression=zipfile.ZIP_DEFLATED) as zip_archive:
-        for file in os.listdir(folder_path):
-            if file.startswith(prefix) and file.endswith(extension):
-                file_path = os.path.join(folder_path, file)
-                if os.path.isfile(file_path):
-                    zip_archive.write(file_path, arcname=file)
-                    zipped_files.append(file)
-
-    if not zipped_files:
-        os.remove(zip_filepath)
-        return None, []
-
-    print(f"Files zipped successfully: {zip_filepath}")
-    return os.path.abspath(zip_filepath), zipped_files
-
-
-def delete_zipped_files(zip_file_path, zipped_files):
-
-    if not os.path.isfile(zip_file_path) or os.path.getsize(zip_file_path) == 0:
-        print(f"ZIP file not created or empty: {zip_file_path}")
-        return
-
-    folder_path = os.path.dirname(zip_file_path)
-    for file in zipped_files:
-        file_path = os.path.join(folder_path, file)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-
-    print(
-        f"Original files deleted after successful ZIP creation: {zip_file_path}")
-
-
-def print_memory_usage(verbose=False):
-
-    if verbose:
-        # Get the current process
-        process = psutil.Process()
-
-        # Get the memory info for the current process
-        mem_info = process.memory_info()
-
-        # Get the total memory and used memory in bytes
-        total_memory = psutil.virtual_memory().total
-        used_memory = mem_info.rss
-
-        # Calculate the memory usage percentage
-        memory_percentage = (used_memory / total_memory) * 100
-
-        # Log the memory usage information
-        logging.info(
-            f"Used Memory: {used_memory / 1024 / 1024:.2f} MB, memory percentage: {memory_percentage:.2f}%")
+    # Iterate through files in the folder
+    for filename in os.listdir(folder_path):
+        # Check if the file matches both prefix and extension
+        if filename.startswith(prefix) and filename.endswith(extension):
+            file_path = os.path.join(folder_path, filename)
+            
+            # Attempt to delete the file
+            try:
+                os.remove(file_path)
+                deleted_files.append(filename)
+            except OSError as e:
+                print(f"Error deleting file {filename}: {e}")
 
 
 def stitch_and_cleanup_csv_files(output_dir: str, final_output_filename: str) -> None:

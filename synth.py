@@ -20,8 +20,7 @@ def main():
     delete_fasta_files(OUTPUT_DIR)
     print("delete_fasta_files   ✓")
 
-    zip_file_path, zipped_files = zip_files(OUTPUT_DIR, "rnad", ".csv")
-    delete_zipped_files(zip_file_path, zipped_files)
+    delete_files(OUTPUT_DIR, "rnad", ".csv")
 
     
 if __name__ == '__main__':
