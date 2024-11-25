@@ -56,8 +56,8 @@ def main():
     
     df.loc[mask, 'mutsig'] = df.iloc[:, 2:].idxmax(axis=1)[mask]
 
-    df.iloc[:, [0, 1, -1]]
-    
+    df = df.iloc[:, [0, 1, -1]]
+    df.fillna("SBS0", inplace=True)
     df.to_csv("sample_probabilities.csv", index=False)
 
 if __name__ == '__main__':
