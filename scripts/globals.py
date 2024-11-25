@@ -31,5 +31,7 @@ NUCLEOTIDE_OFFSET = 30
 
 
 AWK_SCRIPT_PATH = "scripts/rnaduplex_to_csv.awk"
+AWK_SCRIPT_PATH_NEW = "scripts/rnaduplex_to_csv_new.awk"
+
 MUTSIG_PROBABILITIES = "data/mutsig_probabilities/probabilities.csv"
 

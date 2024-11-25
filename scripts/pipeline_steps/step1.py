@@ -104,6 +104,8 @@ def generate_is_mirna_column(df, grch):
     # Initialize new columns
     df['is_mirna'] = 0
     df['mirna_accession'] = None
+    df["pos"] = df["pos"].astype(int)
+    
 
     # Iterate over each mutation in the mutations dataframe
     for index, row in df.iterrows():
